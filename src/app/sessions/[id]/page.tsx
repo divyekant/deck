@@ -19,6 +19,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { MessageView } from "@/components/message-view"
+import { ExportButton } from "@/components/export-button"
 import { formatCost, formatTokens } from "@/lib/claude/costs"
 import type { SessionDetail, UserMessage, AssistantMessage, ContentBlock } from "@/lib/claude/types"
 
@@ -349,16 +350,19 @@ export default function SessionDetailPage() {
             {formatTokens(meta.totalOutputTokens)}
           </span>
 
-          {/* Continue button */}
+          {/* Export + Continue buttons */}
           {!isResumeActive && !showResume && (
-            <Button
-              size="sm"
-              onClick={() => setShowResume(true)}
-              className="ml-auto gap-1.5 bg-emerald-600 text-white hover:bg-emerald-500"
-            >
-              <Play className="size-3.5" />
-              Continue
-            </Button>
+            <div className="ml-auto flex items-center gap-2">
+              <ExportButton sessionId={id} />
+              <Button
+                size="sm"
+                onClick={() => setShowResume(true)}
+                className="gap-1.5 bg-emerald-600 text-white hover:bg-emerald-500"
+              >
+                <Play className="size-3.5" />
+                Continue
+              </Button>
+            </div>
           )}
 
           {/* Streaming indicator */}

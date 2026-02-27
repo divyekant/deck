@@ -299,6 +299,23 @@ export async function getWorkHoursData(): Promise<{ hour: number; count: number 
   return hourCounts.map((count, hour) => ({ hour, count }));
 }
 
+// ---- Period Cost ----
+
+/**
+ * Compute total cost for sessions starting on or after a given date.
+ */
+export async function getPeriodCost(sinceISO: string): Promise<number> {
+  const sessions = await listSessions();
+  const since = new Date(sinceISO).getTime();
+  let total = 0;
+  for (const s of sessions) {
+    if (new Date(s.startTime).getTime() >= since) {
+      total += s.estimatedCost;
+    }
+  }
+  return total;
+}
+
 // ---- Cost Trend ----
 
 /**

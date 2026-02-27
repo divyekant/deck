@@ -3,11 +3,10 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, BarChart3, MessageSquare, GitBranch, Puzzle, Plus, Settings, Sun, Moon } from "lucide-react"
+import { LayoutDashboard, BarChart3, MessageSquare, GitBranch, Puzzle, Plus, Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { useTheme } from "@/components/theme-provider"
 
 const navSections = [
   {
@@ -38,7 +37,6 @@ const navSections = [
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { theme, toggleTheme } = useTheme()
   const [runningCount, setRunningCount] = useState(0)
 
   useEffect(() => {
@@ -118,16 +116,8 @@ export function Sidebar() {
             })}
           </div>
         ))}
-        {/* Theme toggle + Settings — pushed to bottom */}
+        {/* Settings — pushed to bottom */}
         <div className="mt-auto space-y-1">
-          <button
-            onClick={toggleTheme}
-            className="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-sm text-zinc-400 transition-colors hover:bg-zinc-800/60 hover:text-zinc-200"
-            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-          >
-            {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
-            {theme === "dark" ? "Light Mode" : "Dark Mode"}
-          </button>
           <Link
             href="/settings"
             className={cn(

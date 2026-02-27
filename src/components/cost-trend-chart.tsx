@@ -115,7 +115,7 @@ export function CostTrendChart({ data, days: defaultDays }: CostTrendChartProps)
           <svg
             viewBox={`0 0 ${width} ${height}`}
             className="w-full h-full"
-            preserveAspectRatio="none"
+            preserveAspectRatio="xMidYMid meet"
           >
             <defs>
               <linearGradient id="costGradient" x1="0" y1="0" x2="0" y2="1">

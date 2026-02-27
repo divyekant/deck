@@ -8,7 +8,7 @@ import { CostTrendChart } from "@/components/cost-trend-chart"
 import { CostBreakdown } from "@/components/cost-breakdown"
 import { WorkHoursChart } from "@/components/work-hours-chart"
 import { BudgetWidget } from "@/components/budget-widget"
-import { getOverviewStats, getWorkHoursData, getCostTrend } from "@/lib/claude/sessions"
+import { getOverviewStats, getWorkHoursData, getCostTrend, getPeriodCost } from "@/lib/claude/sessions"
 import { formatCost } from "@/lib/claude/costs"
 import { getSettings } from "@/lib/settings"
 
@@ -39,6 +39,9 @@ export default async function Home() {
     periodStart = new Date(now.getFullYear(), now.getMonth() - 1, resetDay)
   }
   const periodStartISO = periodStart.toISOString()
+
+  // Cost scoped to current budget period (not all-time)
+  const periodCost = await getPeriodCost(periodStartISO)
 
   return (
     <div className="space-y-8">
@@ -126,7 +129,7 @@ export default async function Home() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <BudgetWidget spent={stats.totalCost} budget={budget} periodStart={periodStartISO} />
+              <BudgetWidget spent={periodCost} budget={budget} periodStart={periodStartISO} />
             </CardContent>
           </Card>
 
