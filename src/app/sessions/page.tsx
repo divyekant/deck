@@ -439,6 +439,7 @@ function SessionsContent() {
           <Table>
             <TableHeader>
               <TableRow className="border-zinc-800 hover:bg-transparent">
+                <TableHead className="text-zinc-400 w-[40px]"></TableHead>
                 <TableHead className="text-zinc-400 w-[60px]">Source</TableHead>
                 <TableHead className="text-zinc-400">Project</TableHead>
                 <TableHead className="text-zinc-400">First Prompt</TableHead>
@@ -467,6 +468,20 @@ function SessionsContent() {
                   }`}
                   onClick={() => router.push(`/sessions/${session.id}`)}
                 >
+                  <TableCell className="px-2">
+                    <button
+                      onClick={(e) => handleToggleBookmark(e, session.id)}
+                      className="p-0.5 hover:scale-110 transition-transform"
+                    >
+                      <Star
+                        className={`size-4 ${
+                          bookmarks.has(session.id)
+                            ? "fill-yellow-500 text-yellow-500"
+                            : "text-zinc-600 hover:text-zinc-400"
+                        }`}
+                      />
+                    </button>
+                  </TableCell>
                   <TableCell>
                     <Badge
                       variant="secondary"

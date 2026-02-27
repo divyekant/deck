@@ -1,11 +1,13 @@
+import { AlertTriangle } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface BudgetWidgetProps {
   spent: number
   budget: number
+  periodStart?: string // ISO date string
 }
 
-export function BudgetWidget({ spent, budget }: BudgetWidgetProps) {
+export function BudgetWidget({ spent, budget, periodStart }: BudgetWidgetProps) {
   const pct = budget > 0 ? (spent / budget) * 100 : 0
   const clampedPct = Math.min(pct, 100)
 
@@ -22,6 +24,34 @@ export function BudgetWidget({ spent, budget }: BudgetWidgetProps) {
       : pct > 70
         ? "text-amber-400"
         : "text-emerald-400"
+
+  // Projection calculation
+  let projectedTotal: number | null = null
+  let dailyBurn: number | null = null
+
+  if (periodStart) {
+    const start = new Date(periodStart)
+    const now = new Date()
+    const daysElapsed = Math.max(1, Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)))
+
+    // Days in the current month-long period
+    const periodEnd = new Date(start)
+    periodEnd.setMonth(periodEnd.getMonth() + 1)
+    const daysInPeriod = Math.floor((periodEnd.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+
+    dailyBurn = spent / daysElapsed
+    projectedTotal = dailyBurn * daysInPeriod
+  }
+
+  const projectionColor = projectedTotal !== null
+    ? projectedTotal > budget * 1.5
+      ? "text-red-500"
+      : projectedTotal > budget
+        ? "text-amber-500"
+        : "text-zinc-500"
+    : "text-zinc-500"
+
+  const showWarning = projectedTotal !== null && projectedTotal > budget
 
   return (
     <div className="space-y-2">
@@ -42,6 +72,19 @@ export function BudgetWidget({ spent, budget }: BudgetWidgetProps) {
           ${budget.toFixed(2)} budget
         </span>
       </div>
+
+      {/* Projection & Daily Burn */}
+      {projectedTotal !== null && dailyBurn !== null && (
+        <div className="flex items-center justify-between text-xs pt-1">
+          <span className={cn("flex items-center gap-1", projectionColor)}>
+            {showWarning && <AlertTriangle className="size-3" />}
+            Projected: ${projectedTotal.toFixed(2)}
+          </span>
+          <span className="text-zinc-500">
+            ~${dailyBurn.toFixed(2)}/day
+          </span>
+        </div>
+      )}
     </div>
   )
 }

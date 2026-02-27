@@ -20,7 +20,7 @@ import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { MessageView } from "@/components/message-view"
 import { formatCost, formatTokens } from "@/lib/claude/costs"
-import type { SessionDetail, UserMessage, AssistantMessage } from "@/lib/claude/types"
+import type { SessionDetail, UserMessage, AssistantMessage, ContentBlock } from "@/lib/claude/types"
 
 function formatDuration(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000)
@@ -32,8 +32,14 @@ function formatDuration(ms: number): string {
 
 interface StreamMessage {
   type: string
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [key: string]: any
+  message?: {
+    id?: string
+    model?: string
+    role?: string
+    content?: ContentBlock[] | string
+    usage?: { input_tokens: number; output_tokens: number }
+  }
+  exitCode?: number
 }
 
 export default function SessionDetailPage() {
@@ -130,8 +136,7 @@ export default function SessionDetailPage() {
       const decoder = new TextDecoder()
       let buffer = ""
 
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
+      for (;;) {
         const { done: readerDone, value } = await reader.read()
         if (readerDone) break
 
@@ -158,7 +163,7 @@ export default function SessionDetailPage() {
               setStreamMessages((prev) => {
                 if (parsed.type === "assistant" && parsed.message?.id) {
                   const existingIdx = prev.findIndex(
-                    (m) => m.type === "assistant" && m.message?.id === parsed.message.id
+                    (m) => m.type === "assistant" && m.message?.id === parsed.message?.id
                   )
                   if (existingIdx >= 0) {
                     const updated = [...prev]
@@ -249,7 +254,7 @@ export default function SessionDetailPage() {
       const userMsg = msg as UserMessage
       if (Array.isArray(userMsg.message.content)) {
         const hasOnlyToolResults = userMsg.message.content.every(
-          (block: any) => block.type === "tool_result"
+          (block: ContentBlock) => block.type === "tool_result"
         )
         if (hasOnlyToolResults) return false
       }
@@ -270,8 +275,8 @@ export default function SessionDetailPage() {
             ? msg.message.content
             : Array.isArray(msg.message?.content)
               ? msg.message.content
-                  .filter((b: { type: string }) => b.type === "text")
-                  .map((b: { text: string }) => b.text)
+                  .filter((b: ContentBlock) => b.type === "text")
+                  .map((b: ContentBlock) => (b.type === "text" ? b.text : ""))
                   .join("\n")
               : ""
 
@@ -389,8 +394,8 @@ export default function SessionDetailPage() {
                 typeof userMsg.message.content === "string"
                   ? userMsg.message.content
                   : userMsg.message.content
-                      .filter((b: any) => b.type === "text")
-                      .map((b: any) => b.text)
+                      .filter((b: ContentBlock) => b.type === "text")
+                      .map((b: ContentBlock) => (b.type === "text" ? b.text : ""))
                       .join("\n")
 
               return (

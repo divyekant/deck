@@ -5,10 +5,11 @@ import { Badge } from "@/components/ui/badge"
 import { ToolCallView } from "@/components/tool-call-view"
 import { cn } from "@/lib/utils"
 import { ChevronRight, User, Bot } from "lucide-react"
+import type { ContentBlock } from "@/lib/claude/types"
 
 interface MessageViewProps {
   type: "user" | "assistant"
-  content: any
+  content: string | ContentBlock[]
   model?: string
   timestamp?: string
   usage?: { input_tokens: number; output_tokens: number }
@@ -35,7 +36,7 @@ function ThinkingBlock({ text }: { text: string }) {
   )
 }
 
-function renderAssistantContent(content: any) {
+function renderAssistantContent(content: string | ContentBlock[]) {
   if (typeof content === "string") {
     return <p className="whitespace-pre-wrap text-sm text-zinc-200 leading-relaxed">{content}</p>
   }
@@ -44,7 +45,7 @@ function renderAssistantContent(content: any) {
     return <p className="whitespace-pre-wrap text-sm text-zinc-200 leading-relaxed">{String(content)}</p>
   }
 
-  return content.map((block: any, i: number) => {
+  return content.map((block: ContentBlock, i: number) => {
     if (block.type === "text") {
       return (
         <p key={i} className="whitespace-pre-wrap text-sm text-zinc-200 leading-relaxed">
@@ -54,7 +55,7 @@ function renderAssistantContent(content: any) {
     }
 
     if (block.type === "thinking") {
-      return <ThinkingBlock key={i} text={block.thinking || block.text || ""} />
+      return <ThinkingBlock key={i} text={block.thinking || ""} />
     }
 
     if (block.type === "tool_use") {

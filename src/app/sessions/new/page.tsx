@@ -90,9 +90,10 @@ export default function NewSessionPage() {
   useEffect(() => {
     async function fetchProjects() {
       try {
-        const res = await fetch("/api/sessions")
+        const res = await fetch("/api/sessions?limit=200")
         if (!res.ok) return
-        const sessions: SessionMeta[] = await res.json()
+        const data = await res.json()
+        const sessions: SessionMeta[] = data.sessions
         // Extract unique project paths
         const seen = new Map<string, string>()
         for (const s of sessions) {

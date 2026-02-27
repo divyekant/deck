@@ -299,6 +299,44 @@ export async function getWorkHoursData(): Promise<{ hour: number; count: number 
   return hourCounts.map((count, hour) => ({ hour, count }));
 }
 
+// ---- Cost Trend ----
+
+/**
+ * Get daily cost data for the last N days, with zero-cost days filled in
+ * so the chart has continuous data points.
+ */
+export async function getCostTrend(
+  days: number
+): Promise<{ date: string; cost: number }[]> {
+  const sessions = await listSessions();
+
+  const now = new Date();
+  const startDate = new Date(now);
+  startDate.setDate(startDate.getDate() - days + 1);
+  startDate.setHours(0, 0, 0, 0);
+
+  // Build a map of date -> cost
+  const costMap = new Map<string, number>();
+  for (const session of sessions) {
+    const sessionDate = new Date(session.startTime);
+    if (sessionDate >= startDate) {
+      const dateKey = sessionDate.toISOString().slice(0, 10);
+      costMap.set(dateKey, (costMap.get(dateKey) ?? 0) + session.estimatedCost);
+    }
+  }
+
+  // Fill in all days in the range
+  const result: { date: string; cost: number }[] = [];
+  const cursor = new Date(startDate);
+  for (let i = 0; i < days; i++) {
+    const dateKey = cursor.toISOString().slice(0, 10);
+    result.push({ date: dateKey, cost: costMap.get(dateKey) ?? 0 });
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return result;
+}
+
 // ---- Overview / Stats ----
 
 /**

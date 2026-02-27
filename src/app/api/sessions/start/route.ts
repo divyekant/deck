@@ -1,41 +1,65 @@
 import { NextResponse } from "next/server";
+import { access } from "fs/promises";
 import { startSession } from "@/lib/claude/process";
+import { MODEL_PRICING } from "@/lib/claude/costs";
+
+const ALLOWED_MODELS = [
+  "sonnet",
+  "opus",
+  "haiku",
+  ...Object.keys(MODEL_PRICING),
+];
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { projectDir, model, prompt } = body;
 
-    if (!projectDir || typeof projectDir !== "string") {
+    // Validate projectDir
+    if (!projectDir || typeof projectDir !== "string" || !projectDir.trim()) {
       return NextResponse.json(
-        { error: "projectDir is required" },
+        { error: "projectDir is required and must be a non-empty string" },
         { status: 400 }
       );
     }
 
-    if (!model || typeof model !== "string") {
+    try {
+      await access(projectDir.trim());
+    } catch {
       return NextResponse.json(
-        { error: "model is required" },
+        { error: `projectDir does not exist or is not accessible: ${projectDir}` },
         { status: 400 }
       );
     }
 
-    if (!prompt || typeof prompt !== "string") {
+    // Validate model
+    if (!model || typeof model !== "string" || !model.trim()) {
       return NextResponse.json(
-        { error: "prompt is required" },
+        { error: "model is required and must be a non-empty string" },
         { status: 400 }
       );
     }
 
-    const allowedModels = ["sonnet", "opus", "haiku"];
-    if (!allowedModels.includes(model)) {
+    if (!ALLOWED_MODELS.includes(model.trim())) {
       return NextResponse.json(
-        { error: `model must be one of: ${allowedModels.join(", ")}` },
+        { error: `model must be one of: ${ALLOWED_MODELS.join(", ")}` },
         { status: 400 }
       );
     }
 
-    const result = startSession({ projectDir, model, prompt });
+    // Validate prompt
+    if (!prompt || typeof prompt !== "string" || !prompt.trim()) {
+      return NextResponse.json(
+        { error: "prompt is required and must be a non-empty string" },
+        { status: 400 }
+      );
+    }
+
+    const result = startSession({
+      projectDir: projectDir.trim(),
+      model: model.trim(),
+      prompt: prompt.trim(),
+    });
 
     if (result.error) {
       return NextResponse.json(

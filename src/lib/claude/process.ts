@@ -18,42 +18,32 @@ interface RunningSession {
 // Module-level store of running sessions
 const runningSessions = new Map<string, RunningSession>();
 
-export function startSession(opts: {
-  projectDir: string;
-  model: string;
+function spawnClaudeProcess(opts: {
+  id: string;
+  args: string[];
+  cwd?: string;
   prompt: string;
-}): { id: string; error?: string } {
-  const id = randomUUID();
-
-  const args = [
-    "-p",
-    "--output-format=stream-json",
-    "--include-partial-messages",
-    "--model",
-    opts.model,
-    "--session-id",
-    id,
-  ];
-
+  projectDir?: string;
+  model?: string;
+}): { error?: string } {
   let proc: ChildProcess;
   try {
-    proc = spawn("claude", args, {
-      cwd: opts.projectDir,
+    proc = spawn("claude", opts.args, {
+      cwd: opts.cwd || undefined,
       stdio: ["pipe", "pipe", "pipe"],
       env: { ...process.env },
     });
   } catch (err) {
     return {
-      id,
       error: `Failed to spawn claude process: ${err instanceof Error ? err.message : String(err)}`,
     };
   }
 
   const session: RunningSession = {
-    id,
+    id: opts.id,
     process: proc,
-    projectDir: opts.projectDir,
-    model: opts.model,
+    projectDir: opts.projectDir || "",
+    model: opts.model || "",
     prompt: opts.prompt,
     startedAt: new Date(),
     output: [],
@@ -63,7 +53,7 @@ export function startSession(opts: {
     exitListeners: new Set(),
   };
 
-  runningSessions.set(id, session);
+  runningSessions.set(opts.id, session);
 
   // Write prompt to stdin and close it
   if (proc.stdin) {
@@ -123,7 +113,7 @@ export function startSession(opts: {
 
     // Remove from map after 5 minutes
     setTimeout(() => {
-      runningSessions.delete(id);
+      runningSessions.delete(opts.id);
     }, 5 * 60 * 1000);
   });
 
@@ -143,6 +133,39 @@ export function startSession(opts: {
     }
     session.exitListeners.clear();
   });
+
+  return {};
+}
+
+export function startSession(opts: {
+  projectDir: string;
+  model: string;
+  prompt: string;
+}): { id: string; error?: string } {
+  const id = randomUUID();
+
+  const args = [
+    "-p",
+    "--output-format=stream-json",
+    "--include-partial-messages",
+    "--model",
+    opts.model,
+    "--session-id",
+    id,
+  ];
+
+  const result = spawnClaudeProcess({
+    id,
+    args,
+    cwd: opts.projectDir,
+    prompt: opts.prompt,
+    projectDir: opts.projectDir,
+    model: opts.model,
+  });
+
+  if (result.error) {
+    return { id, error: result.error };
+  }
 
   return { id };
 }
@@ -161,107 +184,15 @@ export function resumeSession(opts: {
     "--include-partial-messages",
   ];
 
-  let proc: ChildProcess;
-  try {
-    proc = spawn("claude", args, {
-      stdio: ["pipe", "pipe", "pipe"],
-      env: { ...process.env },
-    });
-  } catch (err) {
-    return {
-      id: sessionId,
-      error: `Failed to spawn claude process: ${err instanceof Error ? err.message : String(err)}`,
-    };
-  }
-
-  const session: RunningSession = {
+  const result = spawnClaudeProcess({
     id: sessionId,
-    process: proc,
-    projectDir: "",
-    model: "",
+    args,
     prompt,
-    startedAt: new Date(),
-    output: [],
-    exitCode: null,
-    exited: false,
-    listeners: new Set(),
-    exitListeners: new Set(),
-  };
+  });
 
-  runningSessions.set(sessionId, session);
-
-  // Write prompt to stdin and close it
-  if (proc.stdin) {
-    proc.stdin.write(prompt);
-    proc.stdin.end();
+  if (result.error) {
+    return { id: sessionId, error: result.error };
   }
-
-  // Collect stdout line by line
-  let buffer = "";
-  proc.stdout?.on("data", (chunk: Buffer) => {
-    buffer += chunk.toString();
-    const lines = buffer.split("\n");
-    buffer = lines.pop() || "";
-
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (trimmed) {
-        session.output.push(trimmed);
-        for (const listener of session.listeners) {
-          listener(trimmed);
-        }
-      }
-    }
-  });
-
-  proc.stderr?.on("data", (chunk: Buffer) => {
-    const text = chunk.toString().trim();
-    if (text) {
-      const errorLine = JSON.stringify({ type: "error", error: text });
-      session.output.push(errorLine);
-      for (const listener of session.listeners) {
-        listener(errorLine);
-      }
-    }
-  });
-
-  proc.on("close", (code) => {
-    if (buffer.trim()) {
-      session.output.push(buffer.trim());
-      for (const listener of session.listeners) {
-        listener(buffer.trim());
-      }
-    }
-
-    session.exitCode = code;
-    session.exited = true;
-
-    for (const exitListener of session.exitListeners) {
-      exitListener(code);
-    }
-    session.exitListeners.clear();
-
-    setTimeout(() => {
-      runningSessions.delete(sessionId);
-    }, 5 * 60 * 1000);
-  });
-
-  proc.on("error", (err) => {
-    const errorLine = JSON.stringify({
-      type: "error",
-      error: `Process error: ${err.message}`,
-    });
-    session.output.push(errorLine);
-    for (const listener of session.listeners) {
-      listener(errorLine);
-    }
-
-    session.exited = true;
-    for (const exitListener of session.exitListeners) {
-      exitListener(null);
-    }
-    session.exitListeners.clear();
-  });
 
   return { id: sessionId };
 }

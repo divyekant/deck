@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatsCard } from "@/components/stats-card"
 import { SessionCard } from "@/components/session-card"
 import { ActivityChart } from "@/components/activity-chart"
+import { CostTrendChart } from "@/components/cost-trend-chart"
 import { CostBreakdown } from "@/components/cost-breakdown"
 import { WorkHoursChart } from "@/components/work-hours-chart"
 import { BudgetWidget } from "@/components/budget-widget"
-import { getOverviewStats, getWorkHoursData } from "@/lib/claude/sessions"
+import { getOverviewStats, getWorkHoursData, getCostTrend } from "@/lib/claude/sessions"
 import { formatCost } from "@/lib/claude/costs"
 import { getSettings } from "@/lib/settings"
 
@@ -19,13 +20,25 @@ function getGreeting(): string {
 }
 
 export default async function Home() {
-  const [stats, workHours, settings] = await Promise.all([
+  const [stats, workHours, settings, costTrend] = await Promise.all([
     getOverviewStats(),
     getWorkHoursData(),
     getSettings(),
+    getCostTrend(90),
   ])
 
   const budget = settings.budget
+
+  // Calculate current budget period start based on settings.budgetResetDay
+  const now = new Date()
+  const resetDay = settings.budgetResetDay
+  let periodStart: Date
+  if (now.getDate() >= resetDay) {
+    periodStart = new Date(now.getFullYear(), now.getMonth(), resetDay)
+  } else {
+    periodStart = new Date(now.getFullYear(), now.getMonth() - 1, resetDay)
+  }
+  const periodStartISO = periodStart.toISOString()
 
   return (
     <div className="space-y-8">
@@ -66,8 +79,8 @@ export default async function Home() {
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Left column — Activity chart (spans 2 cols on lg) */}
-        <div className="lg:col-span-2">
+        {/* Left column — Activity chart + Cost Trend (spans 2 cols on lg) */}
+        <div className="lg:col-span-2 flex flex-col gap-6">
           <Card className="border-zinc-800 bg-zinc-900">
             <CardHeader>
               <CardTitle className="text-sm font-medium text-zinc-300">
@@ -90,6 +103,17 @@ export default async function Home() {
               )}
             </CardContent>
           </Card>
+
+          <Card className="border-zinc-800 bg-zinc-900">
+            <CardHeader>
+              <CardTitle className="text-sm font-medium text-zinc-300">
+                Cost Trend
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CostTrendChart data={costTrend} days={30} />
+            </CardContent>
+          </Card>
         </div>
 
         {/* Right column — Budget + When You Work + Cost by Model */}
@@ -102,7 +126,7 @@ export default async function Home() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <BudgetWidget spent={stats.totalCost} budget={budget} />
+              <BudgetWidget spent={stats.totalCost} budget={budget} periodStart={periodStartISO} />
             </CardContent>
           </Card>
 

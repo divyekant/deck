@@ -105,10 +105,10 @@ export default function ReposPage() {
   useEffect(() => {
     async function fetchSessions() {
       try {
-        const res = await fetch("/api/sessions")
+        const res = await fetch("/api/sessions?limit=200")
         if (!res.ok) throw new Error("Failed to fetch sessions")
-        const data: SessionMeta[] = await res.json()
-        setRepos(buildRepoSummaries(data))
+        const data = await res.json()
+        setRepos(buildRepoSummaries(data.sessions as SessionMeta[]))
       } catch (err) {
         setError(err instanceof Error ? err.message : "Something went wrong")
       } finally {
