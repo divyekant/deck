@@ -1,0 +1,13 @@
+services:
+  deck:
+    build: .
+    container_name: deck
+    ports:
+      - "3001:3001"
+    volumes:
+      - ~/.claude:/home/node/.claude:ro
+      - ~/.codex:/home/node/.codex:ro
+      - ~/.deck:/home/node/.deck
+    environment:
+      - HOME=/home/node
+    restart: unless-stopped
