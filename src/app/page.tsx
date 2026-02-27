@@ -1,65 +1,177 @@
-import Image from "next/image";
+import Link from "next/link"
+import { MessageSquare, DollarSign, Cpu, Calendar } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { StatsCard } from "@/components/stats-card"
+import { SessionCard } from "@/components/session-card"
+import { ActivityChart } from "@/components/activity-chart"
+import { CostBreakdown } from "@/components/cost-breakdown"
+import { WorkHoursChart } from "@/components/work-hours-chart"
+import { BudgetWidget } from "@/components/budget-widget"
+import { getOverviewStats, getWorkHoursData } from "@/lib/claude/sessions"
+import { formatCost } from "@/lib/claude/costs"
 
-export default function Home() {
+function getGreeting(): string {
+  const hour = new Date().getHours()
+  if (hour < 12) return "Good morning"
+  if (hour < 18) return "Good afternoon"
+  return "Good evening"
+}
+
+export default async function Home() {
+  const [stats, workHours] = await Promise.all([
+    getOverviewStats(),
+    getWorkHoursData(),
+  ])
+
+  const budget = 500
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="space-y-8">
+      {/* Greeting */}
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">
+          {getGreeting()}
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          You have {stats.totalSessions} sessions across your projects. Total
+          spend: {formatCost(stats.totalCost)}.
+        </p>
+      </div>
+
+      {/* Stats Row */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatsCard
+          title="Sessions"
+          value={stats.totalSessions}
+          icon={MessageSquare}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+        <StatsCard
+          title="Total Cost"
+          value={formatCost(stats.totalCost)}
+          icon={DollarSign}
+        />
+        <StatsCard
+          title="Models Used"
+          value={stats.modelBreakdown.length}
+          icon={Cpu}
+        />
+        <StatsCard
+          title="Active Days"
+          value={`${stats.dailyActivity.length} / 30`}
+          icon={Calendar}
+        />
+      </div>
+
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Left column — Activity chart (spans 2 cols on lg) */}
+        <div className="lg:col-span-2">
+          <Card className="border-zinc-800 bg-zinc-900">
+            <CardHeader>
+              <CardTitle className="text-sm font-medium text-zinc-300">
+                Activity
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {stats.dailyActivity.length > 0 ? (
+                <ActivityChart
+                  data={stats.dailyActivity.map((d) => ({
+                    date: d.date,
+                    count: d.sessionCount,
+                    cost: d.cost,
+                  }))}
+                />
+              ) : (
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  No activity in the last 30 days.
+                </p>
+              )}
+            </CardContent>
+          </Card>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* Right column — Budget + When You Work + Cost by Model */}
+        <div className="flex flex-col gap-6">
+          {/* Budget */}
+          <Card className="border-zinc-800 bg-zinc-900">
+            <CardHeader>
+              <CardTitle className="text-sm font-medium text-zinc-300">
+                Budget
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <BudgetWidget spent={stats.totalCost} budget={budget} />
+            </CardContent>
+          </Card>
+
+          {/* When You Work */}
+          <Card className="border-zinc-800 bg-zinc-900">
+            <CardHeader>
+              <CardTitle className="text-sm font-medium text-zinc-300">
+                When You Work
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {workHours.some((h) => h.count > 0) ? (
+                <WorkHoursChart data={workHours} />
+              ) : (
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  No session data yet.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Cost by Model */}
+          <Card className="border-zinc-800 bg-zinc-900">
+            <CardHeader>
+              <CardTitle className="text-sm font-medium text-zinc-300">
+                Cost by Model
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {stats.modelBreakdown.length > 0 ? (
+                <CostBreakdown
+                  data={stats.modelBreakdown.map((m) => ({
+                    model: m.model,
+                    cost: m.totalCost,
+                    sessions: m.sessionCount,
+                  }))}
+                  total={stats.totalCost}
+                />
+              ) : (
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  No model data available.
+                </p>
+              )}
+            </CardContent>
+          </Card>
         </div>
-      </main>
+      </div>
+
+      {/* Recent Sessions */}
+      {stats.recentSessions.length > 0 && (
+        <div>
+          <h2 className="mb-4 text-lg font-semibold tracking-tight text-zinc-100">
+            Recent Sessions
+          </h2>
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+            {stats.recentSessions.map((s) => (
+              <Link key={s.id} href={`/sessions/${s.id}`}>
+                <SessionCard
+                  id={s.id}
+                  projectName={s.projectName}
+                  firstPrompt={s.firstPrompt}
+                  model={s.model}
+                  messageCount={s.messageCount}
+                  estimatedCost={s.estimatedCost}
+                  startTime={s.startTime}
+                />
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
-  );
+  )
 }
