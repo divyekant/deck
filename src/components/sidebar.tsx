@@ -12,7 +12,7 @@ const navSections = [
   {
     label: "Overview",
     items: [
-      { name: "Readout", href: "/", icon: BarChart3 },
+      { name: "Home", href: "/", icon: BarChart3 },
     ],
   },
   {
