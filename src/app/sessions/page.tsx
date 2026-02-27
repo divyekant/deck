@@ -219,6 +219,7 @@ function SessionsContent() {
           <Table>
             <TableHeader>
               <TableRow className="border-zinc-800 hover:bg-transparent">
+                <TableHead className="text-zinc-400 w-[60px]">Source</TableHead>
                 <TableHead className="text-zinc-400">Project</TableHead>
                 <TableHead className="text-zinc-400">First Prompt</TableHead>
                 <TableHead className="text-zinc-400">Model</TableHead>
@@ -243,6 +244,18 @@ function SessionsContent() {
                   className="cursor-pointer border-zinc-800 transition-colors hover:bg-zinc-800/50"
                   onClick={() => router.push(`/sessions/${session.id}`)}
                 >
+                  <TableCell>
+                    <Badge
+                      variant="secondary"
+                      className={
+                        session.source === "codex"
+                          ? "bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px]"
+                          : "bg-zinc-800 text-zinc-400 text-[10px]"
+                      }
+                    >
+                      {session.source === "codex" ? "Codex" : "CC"}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="font-medium text-zinc-200">
                     {session.projectName}
                   </TableCell>

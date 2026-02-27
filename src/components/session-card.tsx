@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils"
 
 interface SessionCardProps {
   id: string
+  source?: 'claude-code' | 'codex'
   projectName: string
   firstPrompt: string
   model: string
@@ -36,6 +37,7 @@ function relativeTime(dateStr: string): string {
 
 export function SessionCard({
   id,
+  source = 'claude-code',
   projectName,
   firstPrompt,
   model,
@@ -44,6 +46,7 @@ export function SessionCard({
   startTime,
   onClick,
 }: SessionCardProps) {
+  const isCodex = source === 'codex'
   return (
     <Card
       className={cn(
@@ -56,6 +59,17 @@ export function SessionCard({
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
+              <Badge
+                variant="secondary"
+                className={cn(
+                  "text-[10px]",
+                  isCodex
+                    ? "bg-emerald-950 text-emerald-400 border border-emerald-800"
+                    : "bg-zinc-800 text-zinc-300"
+                )}
+              >
+                {isCodex ? "Codex" : "CC"}
+              </Badge>
               <Badge variant="secondary" className="bg-zinc-800 text-zinc-300">
                 {projectName}
               </Badge>

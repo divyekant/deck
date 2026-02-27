@@ -147,6 +147,125 @@ export function startSession(opts: {
   return { id };
 }
 
+export function resumeSession(opts: {
+  sessionId: string;
+  prompt: string;
+}): { id: string; error?: string } {
+  const { sessionId, prompt } = opts;
+
+  const args = [
+    "--resume",
+    sessionId,
+    "-p",
+    "--output-format=stream-json",
+    "--include-partial-messages",
+  ];
+
+  let proc: ChildProcess;
+  try {
+    proc = spawn("claude", args, {
+      stdio: ["pipe", "pipe", "pipe"],
+      env: { ...process.env },
+    });
+  } catch (err) {
+    return {
+      id: sessionId,
+      error: `Failed to spawn claude process: ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
+
+  const session: RunningSession = {
+    id: sessionId,
+    process: proc,
+    projectDir: "",
+    model: "",
+    prompt,
+    startedAt: new Date(),
+    output: [],
+    exitCode: null,
+    exited: false,
+    listeners: new Set(),
+    exitListeners: new Set(),
+  };
+
+  runningSessions.set(sessionId, session);
+
+  // Write prompt to stdin and close it
+  if (proc.stdin) {
+    proc.stdin.write(prompt);
+    proc.stdin.end();
+  }
+
+  // Collect stdout line by line
+  let buffer = "";
+  proc.stdout?.on("data", (chunk: Buffer) => {
+    buffer += chunk.toString();
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed) {
+        session.output.push(trimmed);
+        for (const listener of session.listeners) {
+          listener(trimmed);
+        }
+      }
+    }
+  });
+
+  proc.stderr?.on("data", (chunk: Buffer) => {
+    const text = chunk.toString().trim();
+    if (text) {
+      const errorLine = JSON.stringify({ type: "error", error: text });
+      session.output.push(errorLine);
+      for (const listener of session.listeners) {
+        listener(errorLine);
+      }
+    }
+  });
+
+  proc.on("close", (code) => {
+    if (buffer.trim()) {
+      session.output.push(buffer.trim());
+      for (const listener of session.listeners) {
+        listener(buffer.trim());
+      }
+    }
+
+    session.exitCode = code;
+    session.exited = true;
+
+    for (const exitListener of session.exitListeners) {
+      exitListener(code);
+    }
+    session.exitListeners.clear();
+
+    setTimeout(() => {
+      runningSessions.delete(sessionId);
+    }, 5 * 60 * 1000);
+  });
+
+  proc.on("error", (err) => {
+    const errorLine = JSON.stringify({
+      type: "error",
+      error: `Process error: ${err.message}`,
+    });
+    session.output.push(errorLine);
+    for (const listener of session.listeners) {
+      listener(errorLine);
+    }
+
+    session.exited = true;
+    for (const exitListener of session.exitListeners) {
+      exitListener(null);
+    }
+    session.exitListeners.clear();
+  });
+
+  return { id: sessionId };
+}
+
 export function getRunningSession(id: string): RunningSession | undefined {
   return runningSessions.get(id);
 }

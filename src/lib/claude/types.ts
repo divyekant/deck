@@ -135,6 +135,7 @@ export type SessionMessage =
 
 export interface SessionMeta {
   id: string;
+  source: 'claude-code' | 'codex';
   projectPath: string;
   projectName: string;
   model: string;

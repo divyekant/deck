@@ -9,6 +9,7 @@ import { WorkHoursChart } from "@/components/work-hours-chart"
 import { BudgetWidget } from "@/components/budget-widget"
 import { getOverviewStats, getWorkHoursData } from "@/lib/claude/sessions"
 import { formatCost } from "@/lib/claude/costs"
+import { getSettings } from "@/lib/settings"
 
 function getGreeting(): string {
   const hour = new Date().getHours()
@@ -18,12 +19,13 @@ function getGreeting(): string {
 }
 
 export default async function Home() {
-  const [stats, workHours] = await Promise.all([
+  const [stats, workHours, settings] = await Promise.all([
     getOverviewStats(),
     getWorkHoursData(),
+    getSettings(),
   ])
 
-  const budget = 500
+  const budget = settings.budget
 
   return (
     <div className="space-y-8">
@@ -160,6 +162,7 @@ export default async function Home() {
               <Link key={s.id} href={`/sessions/${s.id}`}>
                 <SessionCard
                   id={s.id}
+                  source={s.source}
                   projectName={s.projectName}
                   firstPrompt={s.firstPrompt}
                   model={s.model}

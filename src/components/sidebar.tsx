@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, BarChart3, MessageSquare, GitBranch, Plus } from "lucide-react"
+import { LayoutDashboard, BarChart3, MessageSquare, GitBranch, Puzzle, Plus, Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -25,6 +25,12 @@ const navSections = [
     label: "Workspace",
     items: [
       { name: "Repos", href: "/repos", icon: GitBranch },
+    ],
+  },
+  {
+    label: "Config",
+    items: [
+      { name: "MCP Servers", href: "/mcp", icon: Puzzle },
     ],
   },
 ]
@@ -110,6 +116,21 @@ export function Sidebar() {
             })}
           </div>
         ))}
+        {/* Settings — pushed to bottom */}
+        <div className="mt-auto">
+          <Link
+            href="/settings"
+            className={cn(
+              "flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors",
+              pathname === "/settings"
+                ? "bg-zinc-800 text-zinc-100"
+                : "text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200"
+            )}
+          >
+            <Settings className="size-4" />
+            Settings
+          </Link>
+        </div>
       </nav>
 
       <div className="px-3 pb-4">

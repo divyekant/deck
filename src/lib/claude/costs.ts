@@ -1,6 +1,7 @@
 import type { ModelPricing, TokenUsage } from "./types";
 
 export const MODEL_PRICING: Record<string, ModelPricing> = {
+  // Anthropic models (Claude Code)
   "claude-opus-4-6": {
     input: 15,
     output: 75,
@@ -18,6 +19,50 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     output: 4,
     cacheWrite: 1.0,
     cacheRead: 0.08,
+  },
+  // OpenAI models (Codex CLI)
+  "gpt-4.1": {
+    input: 2,
+    output: 8,
+    cacheWrite: 0,
+    cacheRead: 0.5, // cached input pricing for OpenAI
+  },
+  "gpt-4.1-mini": {
+    input: 0.4,
+    output: 1.6,
+    cacheWrite: 0,
+    cacheRead: 0.1,
+  },
+  "gpt-4.1-nano": {
+    input: 0.1,
+    output: 0.4,
+    cacheWrite: 0,
+    cacheRead: 0.025,
+  },
+  "o3": {
+    input: 2,
+    output: 8,
+    cacheWrite: 0,
+    cacheRead: 0.5,
+  },
+  "o4-mini": {
+    input: 1.1,
+    output: 4.4,
+    cacheWrite: 0,
+    cacheRead: 0.275,
+  },
+  "codex-mini-latest": {
+    input: 1.5,
+    output: 6,
+    cacheWrite: 0,
+    cacheRead: 0.375,
+  },
+  // Codex model aliases (may appear with version suffixes)
+  "gpt-5.2-codex": {
+    input: 2,
+    output: 8,
+    cacheWrite: 0,
+    cacheRead: 0.5,
   },
 };
 

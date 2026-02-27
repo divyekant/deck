@@ -2,7 +2,7 @@ import { promises as fs } from "fs";
 import os from "os";
 import path from "path";
 
-import { parseSessionFile } from "./parser";
+import { parseSessionFile, parseCodexSessionFile } from "./parser";
 import type {
   DailyActivity,
   ModelCostBreakdown,
@@ -15,6 +15,8 @@ import type {
 
 export const CLAUDE_DIR = path.join(os.homedir(), ".claude");
 const PROJECTS_DIR = path.join(CLAUDE_DIR, "projects");
+export const CODEX_DIR = path.join(os.homedir(), ".codex");
+const CODEX_SESSIONS_DIR = path.join(CODEX_DIR, "sessions");
 
 // ---- Module-level cache ----
 // Keyed by "filePath::mtime" to invalidate when the file changes.
@@ -99,16 +101,104 @@ export async function getSessionFiles(projectDir: string): Promise<string[]> {
   }
 }
 
+// ---- Codex Session Discovery ----
+
+/**
+ * Recursively find all .jsonl session files under ~/.codex/sessions/.
+ * Codex stores sessions in a YYYY/MM/DD directory structure.
+ */
+async function findCodexSessionFiles(dir: string): Promise<string[]> {
+  const results: string[] = [];
+  try {
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        const nested = await findCodexSessionFiles(fullPath);
+        results.push(...nested);
+      } else if (entry.isFile() && entry.name.endsWith(".jsonl")) {
+        results.push(fullPath);
+      }
+    }
+  } catch {
+    // Directory doesn't exist or can't be read
+  }
+  return results;
+}
+
+/**
+ * Get all Codex session file paths from ~/.codex/sessions/.
+ */
+export async function getCodexSessionFiles(): Promise<string[]> {
+  return findCodexSessionFiles(CODEX_SESSIONS_DIR);
+}
+
+/**
+ * Parse all Codex sessions and return their metadata.
+ * Uses the same mtime-based caching as Claude Code sessions.
+ */
+async function getCodexSessions(): Promise<SessionMeta[]> {
+  const files = await getCodexSessionFiles();
+  const metas: SessionMeta[] = [];
+
+  for (const filePath of files) {
+    try {
+      const stat = await fs.stat(filePath);
+      const mtimeMs = stat.mtimeMs;
+      const cached = metaCache.get(filePath);
+
+      if (cached && cached.mtime === mtimeMs) {
+        metas.push(cached.meta);
+        continue;
+      }
+
+      const detail = await parseCodexSessionFile(filePath);
+
+      if (detail.meta.messageCount > 0) {
+        metaCache.set(filePath, { mtime: mtimeMs, meta: detail.meta });
+        metas.push(detail.meta);
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return metas;
+}
+
+// ---- Codex Session-ID to File Mapping ----
+
+/**
+ * Map to look up Codex session files by session ID.
+ * Populated lazily when getSession needs to find a Codex session.
+ */
+const codexIdToFile = new Map<string, string>();
+
+async function ensureCodexIdMap(): Promise<void> {
+  if (codexIdToFile.size > 0) return;
+  const files = await getCodexSessionFiles();
+  for (const filePath of files) {
+    const base = path.basename(filePath, ".jsonl");
+    // Filename format: rollout-YYYY-MM-DDTHH-MM-SS-UUID.jsonl
+    const uuidMatch = base.match(
+      /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/
+    );
+    const id = uuidMatch ? uuidMatch[1] : base;
+    codexIdToFile.set(id, filePath);
+  }
+}
+
 // ---- Session Listing ----
 
 /**
- * List all sessions across all projects, sorted by startTime descending.
+ * List all sessions across all projects (Claude Code + Codex), sorted by startTime descending.
  * Uses mtime-based caching so unchanged files are not re-parsed.
  */
 export async function listSessions(): Promise<SessionMeta[]> {
   const projects = await getProjectDirs();
   const allMetas: SessionMeta[] = [];
 
+  // Scan Claude Code sessions
   for (const project of projects) {
     const files = await getSessionFiles(project.dirName);
 
@@ -141,6 +231,10 @@ export async function listSessions(): Promise<SessionMeta[]> {
     }
   }
 
+  // Scan Codex sessions
+  const codexMetas = await getCodexSessions();
+  allMetas.push(...codexMetas);
+
   // Sort by startTime descending (most recent first)
   allMetas.sort(
     (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
@@ -152,12 +246,13 @@ export async function listSessions(): Promise<SessionMeta[]> {
 // ---- Single Session Retrieval ----
 
 /**
- * Find and parse a specific session by its ID across all projects.
+ * Find and parse a specific session by its ID across all projects (Claude Code + Codex).
  * Returns null if the session is not found.
  */
 export async function getSession(
   sessionId: string
 ): Promise<SessionDetail | null> {
+  // Search Claude Code sessions first
   const projects = await getProjectDirs();
 
   for (const project of projects) {
@@ -170,6 +265,18 @@ export async function getSession(
     } catch {
       // File doesn't exist in this project, try next
       continue;
+    }
+  }
+
+  // Search Codex sessions
+  await ensureCodexIdMap();
+  const codexFile = codexIdToFile.get(sessionId);
+  if (codexFile) {
+    try {
+      await fs.access(codexFile);
+      return await parseCodexSessionFile(codexFile);
+    } catch {
+      // File can't be read
     }
   }
 
