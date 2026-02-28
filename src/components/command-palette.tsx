@@ -20,6 +20,7 @@ import {
   Plug,
   Scale,
   Coins,
+  BookOpen,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { VisuallyHidden } from "radix-ui"
@@ -48,6 +49,7 @@ const PAGES: PaletteItem[] = [
   { id: "tokens", label: "Token Analytics", section: "Pages", href: "/tokens", icon: Coins },
   { id: "ports", label: "Ports", section: "Pages", href: "/ports", icon: Plug },
   { id: "compare", label: "Compare Sessions", section: "Pages", href: "/compare", icon: Scale },
+  { id: "prompts", label: "Prompt Library", section: "Pages", href: "/prompts", icon: BookOpen },
   { id: "mcp", label: "MCP Servers", section: "Pages", href: "/mcp", icon: Puzzle },
   { id: "settings", label: "Settings", section: "Pages", href: "/settings", icon: Settings },
 ]

@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatCost, formatTokens } from "@/lib/claude/costs"
 import SessionHeatmap from "@/components/session-heatmap"
+import TagsAnalytics from "@/components/tags-analytics"
 
 // ---- Types ----
 
@@ -737,6 +738,16 @@ export default function AnalyticsPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Tags Overview */}
+      <Card className="border-zinc-800 bg-zinc-900">
+        <CardHeader>
+          <CardTitle className="text-zinc-100">Tags Overview</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <TagsAnalytics />
+        </CardContent>
+      </Card>
 
       {/* Weekly Cost Chart */}
       <Card className="border-zinc-800 bg-zinc-900">

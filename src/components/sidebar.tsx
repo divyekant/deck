@@ -26,6 +26,7 @@ import {
   Plug,
   Scale,
   Coins,
+  BookOpen,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -61,6 +62,7 @@ const navSections = [
       { name: "Snapshots", href: "/snapshots", icon: Camera },
       { name: "Work Graph", href: "/work-graph", icon: Network },
       { name: "Compare", href: "/compare", icon: Scale },
+      { name: "Prompts", href: "/prompts", icon: BookOpen },
     ],
   },
   {
