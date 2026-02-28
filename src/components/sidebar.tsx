@@ -27,6 +27,8 @@ import {
   Scale,
   Coins,
   BookOpen,
+  Link2,
+  Cpu,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -34,7 +36,7 @@ import { Separator } from "@/components/ui/separator"
 
 const STORAGE_KEY = "deck-sidebar-collapsed"
 
-const navSections = [
+export const navSections = [
   {
     label: "Overview",
     items: [
@@ -50,6 +52,7 @@ const navSections = [
       { name: "Costs", href: "/costs", icon: DollarSign },
       { name: "Analytics", href: "/analytics", icon: TrendingUp },
       { name: "Tokens", href: "/tokens", icon: Coins },
+      { name: "Models", href: "/models", icon: Cpu },
     ],
   },
   {
@@ -63,6 +66,7 @@ const navSections = [
       { name: "Work Graph", href: "/work-graph", icon: Network },
       { name: "Compare", href: "/compare", icon: Scale },
       { name: "Prompts", href: "/prompts", icon: BookOpen },
+      { name: "Chains", href: "/chains", icon: Link2 },
     ],
   },
   {
@@ -130,7 +134,7 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "flex h-screen shrink-0 flex-col border-r border-zinc-800 bg-zinc-950 transition-all duration-200",
+        "hidden h-screen shrink-0 flex-col border-r border-zinc-800 bg-zinc-950 transition-all duration-200 lg:flex",
         collapsed ? "w-16" : "w-60"
       )}
       // Prevent layout shift before hydration by hiding until ready

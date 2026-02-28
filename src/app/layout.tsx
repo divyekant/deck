@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Sidebar } from "@/components/sidebar";
+import { MobileNav } from "@/components/mobile-nav";
 import { ThemeProvider } from "@/components/theme-provider";
 import { CommandPalette } from "@/components/command-palette";
 import { KeyboardNav } from "@/components/keyboard-nav";
@@ -41,10 +42,11 @@ export default function RootLayout({
         <ThemeProvider>
           <div className="flex h-screen">
             <Sidebar />
-            <main className="flex-1 overflow-y-auto p-6">
+            <main className="flex-1 overflow-y-auto p-6 pb-20 lg:pb-6">
               {children}
             </main>
           </div>
+          <MobileNav />
           <CommandPalette />
           <KeyboardNav />
         </ThemeProvider>
