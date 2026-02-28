@@ -15,6 +15,8 @@ import {
   ChevronRight,
   Search,
   TrendingUp,
+  Radio,
+  DollarSign,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -33,7 +35,9 @@ const navSections = [
   {
     label: "Monitor",
     items: [
-      { name: "Sessions", href: "/sessions", icon: MessageSquare, showRunning: true },
+      { name: "Live", href: "/live", icon: Radio, showRunning: true },
+      { name: "Sessions", href: "/sessions", icon: MessageSquare },
+      { name: "Costs", href: "/costs", icon: DollarSign },
       { name: "Analytics", href: "/analytics", icon: TrendingUp },
     ],
   },

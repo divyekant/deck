@@ -22,6 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { formatCost, formatTokens } from "@/lib/claude/costs"
+import { getProjectColor } from "@/lib/project-colors"
 import type { SessionMeta } from "@/lib/claude/types"
 
 function truncate(str: string, max: number): string {
@@ -660,7 +661,10 @@ function SessionsContent() {
                     </Badge>
                   </TableCell>
                   <TableCell className="font-medium text-zinc-200">
-                    {session.projectName}
+                    <span className="flex items-center gap-2">
+                      <span className={`size-2 shrink-0 rounded-full ${getProjectColor(session.projectName).dot}`} />
+                      {session.projectName}
+                    </span>
                   </TableCell>
                   <TableCell className="max-w-xs text-zinc-400">
                     <div className="flex items-center gap-2">

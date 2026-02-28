@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { MessageSquare, DollarSign, Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { getProjectColor } from "@/lib/project-colors"
 
 interface SessionCardProps {
   id: string
@@ -47,10 +48,12 @@ export function SessionCard({
   onClick,
 }: SessionCardProps) {
   const isCodex = source === 'codex'
+  const color = getProjectColor(projectName)
   return (
     <Card
       className={cn(
-        "cursor-pointer border-zinc-800 bg-zinc-900 transition-colors hover:border-zinc-700 hover:bg-zinc-800/80",
+        "cursor-pointer border-zinc-800 bg-zinc-900 transition-colors hover:border-zinc-700 hover:bg-zinc-800/80 border-l-2",
+        color.borderLeft,
         onClick && "cursor-pointer"
       )}
       onClick={onClick}
@@ -70,7 +73,7 @@ export function SessionCard({
               >
                 {isCodex ? "Codex" : "CC"}
               </Badge>
-              <Badge variant="secondary" className="bg-zinc-800 text-zinc-300">
+              <Badge variant="secondary" className={`${color.bg} ${color.text} border ${color.border}`}>
                 {projectName}
               </Badge>
               <Badge variant="outline" className="border-zinc-700 text-zinc-500 text-[10px]">

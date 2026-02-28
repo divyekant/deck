@@ -9,6 +9,10 @@ const modelColors: Record<string, string> = {
   opus: "bg-orange-500",
   sonnet: "bg-blue-500",
   haiku: "bg-emerald-500",
+  gpt: "bg-purple-500",
+  o3: "bg-purple-500",
+  o4: "bg-purple-500",
+  codex: "bg-cyan-500",
 }
 
 function getModelColor(model: string): string {
@@ -20,21 +24,35 @@ function getModelColor(model: string): string {
 }
 
 export function CostBreakdown({ data, total }: CostBreakdownProps) {
+  const maxCost = Math.max(...data.map((d) => d.cost), 0)
+
   return (
     <div>
-      <div className="space-y-3">
-        {data.map((item) => (
-          <div key={item.model} className="flex items-center gap-3">
-            <span className={`size-2.5 shrink-0 rounded-full ${getModelColor(item.model)}`} />
-            <span className="flex-1 text-sm text-zinc-300">{item.model}</span>
-            <span className="text-xs text-muted-foreground">
-              {item.sessions} session{item.sessions !== 1 ? "s" : ""}
-            </span>
-            <span className="w-20 text-right text-sm font-medium text-zinc-200">
-              ${item.cost.toFixed(2)}
-            </span>
-          </div>
-        ))}
+      <div className="space-y-4">
+        {data.map((item) => {
+          const widthPercent = maxCost > 0 ? (item.cost / maxCost) * 100 : 0
+          return (
+            <div key={item.model} className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-zinc-300">{item.model}</span>
+                <span className="text-sm font-medium text-zinc-200">
+                  ${item.cost.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="h-2 flex-1 rounded-full bg-zinc-800">
+                  <div
+                    className={`h-2 rounded-full ${getModelColor(item.model)}`}
+                    style={{ width: `${widthPercent}%` }}
+                  />
+                </div>
+                <span className="shrink-0 text-xs text-muted-foreground">
+                  {item.sessions} session{item.sessions !== 1 ? "s" : ""}
+                </span>
+              </div>
+            </div>
+          )
+        })}
       </div>
       <Separator className="my-3 bg-zinc-800" />
       <div className="flex items-center justify-between">

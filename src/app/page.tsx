@@ -1,5 +1,6 @@
+import { execSync } from "child_process"
 import Link from "next/link"
-import { MessageSquare, DollarSign, Cpu, Calendar } from "lucide-react"
+import { MessageSquare, DollarSign, Cpu, Calendar, GitCommitHorizontal } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatsCard } from "@/components/stats-card"
 import { SessionCard } from "@/components/session-card"
@@ -8,7 +9,7 @@ import { CostTrendChart } from "@/components/cost-trend-chart"
 import { CostBreakdown } from "@/components/cost-breakdown"
 import { WorkHoursChart } from "@/components/work-hours-chart"
 import { BudgetWidget } from "@/components/budget-widget"
-import { getOverviewStats, getWorkHoursData, getCostTrend, getPeriodCost } from "@/lib/claude/sessions"
+import { getOverviewStats, getWorkHoursData, getCostTrend, getPeriodCost, getProjectDirs, listSessions } from "@/lib/claude/sessions"
 import { formatCost } from "@/lib/claude/costs"
 import { getSettings } from "@/lib/settings"
 
@@ -20,12 +21,45 @@ function getGreeting(): string {
 }
 
 export default async function Home() {
-  const [stats, workHours, settings, costTrend] = await Promise.all([
+  const [stats, workHours, settings, costTrend, projectDirs, allSessions] = await Promise.all([
     getOverviewStats(),
     getWorkHoursData(),
     getSettings(),
     getCostTrend(90),
+    getProjectDirs(),
+    listSessions(),
   ])
+
+  // Count today's commits across all projects
+  let commitsToday = 0
+  for (const project of projectDirs) {
+    try {
+      const output = execSync(
+        `git -C "${project.path}" log --oneline --since="midnight" 2>/dev/null | wc -l`,
+        { encoding: "utf-8", timeout: 5000 }
+      )
+      commitsToday += parseInt(output.trim(), 10) || 0
+    } catch {
+      // Not a git repo or git failed — skip
+    }
+  }
+
+  // Find project with most sessions
+  const projectCounts = new Map<string, number>()
+  for (const session of allSessions) {
+    const count = projectCounts.get(session.projectName) ?? 0
+    projectCounts.set(session.projectName, count + 1)
+  }
+  let topProject: { name: string; sessions: number } | null = null
+  let maxCount = 0
+  for (const [name, count] of projectCounts) {
+    if (count > maxCount) {
+      maxCount = count
+      topProject = { name, sessions: count }
+    }
+  }
+
+  const projectCount = projectDirs.length
 
   const budget = settings.budget
 
@@ -51,13 +85,16 @@ export default async function Home() {
           {getGreeting()}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          You have {stats.totalSessions} sessions across your projects. Total
-          spend: {formatCost(stats.totalCost)}.
+          You have <span className="text-zinc-300 font-medium">{stats.totalSessions}</span> sessions
+          across <span className="text-zinc-300 font-medium">{projectCount}</span> projects.
+          {topProject && <> <span className="text-zinc-300 font-medium">{topProject.name}</span> has the most activity.</>}
+          {commitsToday > 0 && <> You&apos;ve landed <span className="text-zinc-300 font-medium">{commitsToday}</span> commits today.</>}
+          {" "}Total spend: <span className="text-zinc-300 font-medium">{formatCost(stats.totalCost)}</span>.
         </p>
       </div>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <StatsCard
           title="Sessions"
           value={stats.totalSessions}
@@ -67,6 +104,11 @@ export default async function Home() {
           title="Total Cost"
           value={formatCost(stats.totalCost)}
           icon={DollarSign}
+        />
+        <StatsCard
+          title="Commits Today"
+          value={commitsToday}
+          icon={GitCommitHorizontal}
         />
         <StatsCard
           title="Models Used"

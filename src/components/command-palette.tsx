@@ -11,6 +11,8 @@ import {
   Plus,
   ArrowRight,
   Search,
+  Radio,
+  DollarSign,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { VisuallyHidden } from "radix-ui"
@@ -28,7 +30,9 @@ interface PaletteItem {
 const PAGES: PaletteItem[] = [
   { id: "home", label: "Home", section: "Pages", href: "/", icon: Home },
   { id: "search", label: "Search", section: "Pages", href: "/search", icon: Search },
+  { id: "live", label: "Live Sessions", section: "Pages", href: "/live", icon: Radio },
   { id: "sessions", label: "Sessions", section: "Pages", href: "/sessions", icon: MessageSquare },
+  { id: "costs", label: "Costs", section: "Pages", href: "/costs", icon: DollarSign },
   { id: "repos", label: "Repos", section: "Pages", href: "/repos", icon: GitBranch },
   { id: "mcp", label: "MCP Servers", section: "Pages", href: "/mcp", icon: Puzzle },
   { id: "settings", label: "Settings", section: "Pages", href: "/settings", icon: Settings },

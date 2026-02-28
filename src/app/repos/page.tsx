@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { GitBranch, DollarSign, Clock, Cpu } from "lucide-react"
 import { formatCost } from "@/lib/claude/costs"
+import { getProjectColor } from "@/lib/project-colors"
 import type { SessionMeta } from "@/lib/claude/types"
 
 interface RepoSummary {
@@ -149,17 +150,19 @@ export default function ReposPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {repos.map((repo) => (
+          {repos.map((repo) => {
+            const color = getProjectColor(repo.projectName)
+            return (
             <Card
               key={repo.projectName}
-              className="cursor-pointer border-zinc-800 bg-zinc-900 transition-colors hover:border-zinc-700 hover:bg-zinc-800/80"
+              className={`cursor-pointer border-zinc-800 bg-zinc-900 transition-colors hover:border-zinc-700 hover:bg-zinc-800/80 border-t-2 ${color.borderTop}`}
               onClick={() => router.push(`/repos/${encodeURIComponent(repo.projectName)}`)}
             >
               <CardContent className="pt-0">
                 <div className="flex items-start gap-2">
                   <GitBranch className="mt-0.5 size-4 shrink-0 text-zinc-500" />
                   <div className="min-w-0">
-                    <p className="text-lg font-semibold text-zinc-100 truncate">
+                    <p className={`text-lg font-semibold truncate ${color.text}`}>
                       {repo.projectName}
                     </p>
                     <p className="text-xs text-muted-foreground truncate">
@@ -188,7 +191,8 @@ export default function ReposPage() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>
