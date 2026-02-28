@@ -4,14 +4,16 @@ WORKDIR /app
 
 # Install dependencies
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
+RUN npm ci && chown -R node:node /app
 
 # Copy built app and source
-COPY .next .next
-COPY public public
-COPY src src
-COPY next.config.ts tsconfig.json ./
+COPY --chown=node:node .next .next
+COPY --chown=node:node public public
+COPY --chown=node:node src src
+COPY --chown=node:node next.config.ts tsconfig.json ./
 
 EXPOSE 3001
+
+USER node
 
 CMD ["npm", "start"]

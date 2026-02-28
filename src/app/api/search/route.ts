@@ -23,6 +23,8 @@ interface SessionSearchResult {
 }
 
 const DEFAULT_LIMIT = 20;
+const DEFAULT_MAX_SESSIONS = 50;
+const MAX_MAX_SESSIONS = 200;
 const CONTEXT_CHARS = 100;
 
 /**
@@ -108,6 +110,7 @@ export async function GET(request: NextRequest) {
   const q = params.get("q");
   const limit = Math.max(1, Math.min(100, parseInt(params.get("limit") || String(DEFAULT_LIMIT), 10) || DEFAULT_LIMIT));
   const offset = Math.max(0, parseInt(params.get("offset") || "0", 10) || 0);
+  const maxSessions = Math.max(1, Math.min(MAX_MAX_SESSIONS, parseInt(params.get("maxSessions") || String(DEFAULT_MAX_SESSIONS), 10) || DEFAULT_MAX_SESSIONS));
 
   if (!q || q.trim() === "") {
     return NextResponse.json(
@@ -119,8 +122,9 @@ export async function GET(request: NextRequest) {
   const queryLower = q.trim().toLowerCase();
 
   try {
-    // Sessions are already sorted most-recent-first
-    const sessions = await listSessions();
+    // Sessions are already sorted most-recent-first — cap to avoid unbounded memory
+    const allSessions = await listSessions();
+    const sessions = allSessions.slice(0, maxSessions);
 
     // Collect all session-level results first so we can count total
     const allSessionResults: SessionSearchResult[] = [];

@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { getProjectColor } from "@/lib/project-colors"
+import { formatRelativeDate } from "@/lib/format"
 
 // ---- Types ----
 
@@ -122,25 +123,6 @@ function ActivityIcon({ className }: { className?: string }) {
 const ALL_TYPES = "__all__"
 
 type FilterType = typeof ALL_TYPES | "sessions" | "cost" | "duration"
-
-function formatRelativeTime(dateStr: string): string {
-  const now = Date.now()
-  const then = new Date(dateStr).getTime()
-  const diffMs = now - then
-  const diffMin = Math.floor(diffMs / 60000)
-
-  if (diffMin < 1) return "just now"
-  if (diffMin < 60) return `${diffMin}m ago`
-  const diffHr = Math.floor(diffMin / 60)
-  if (diffHr < 24) return `${diffHr}h ago`
-  const diffDay = Math.floor(diffHr / 24)
-  if (diffDay < 7) return `${diffDay}d ago`
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  })
-}
 
 function getEventIcon(type: ActivityEvent["type"]) {
   switch (type) {
@@ -400,7 +382,7 @@ function ActivityContent() {
 
                     {/* Timestamp */}
                     <span className="shrink-0 text-xs text-zinc-500 group-hover:text-zinc-400">
-                      {formatRelativeTime(event.timestamp)}
+                      {formatRelativeDate(event.timestamp)}
                     </span>
                   </div>
                 </button>

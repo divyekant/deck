@@ -41,7 +41,9 @@ function extractServers(
       ...(type === "sse" && config.url ? { url: config.url } : {}),
       scope,
       ...(projectName ? { projectName } : {}),
-      ...(config.env && Object.keys(config.env).length > 0 ? { env: config.env } : {}),
+      ...(config.env && Object.keys(config.env).length > 0
+        ? { env: Object.fromEntries(Object.entries(config.env).map(([k]) => [k, "***"])) }
+        : {}),
     };
   });
 }

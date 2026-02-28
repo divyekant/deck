@@ -146,7 +146,7 @@ export function Sidebar() {
     }
 
     fetchRunning()
-    const interval = setInterval(fetchRunning, 10000)
+    const interval = setInterval(fetchRunning, 30000)
 
     return () => {
       active = false

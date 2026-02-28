@@ -2,6 +2,7 @@ import { promises as fs } from "fs"
 import path from "path"
 import os from "os"
 import crypto from "crypto"
+import { withFileLock } from "./file-lock"
 
 const DECK_DIR = path.join(os.homedir(), ".deck")
 const TEMPLATES_FILE = path.join(DECK_DIR, "templates.json")
@@ -103,20 +104,24 @@ export async function getTemplates(): Promise<Template[]> {
 export async function addTemplate(
   t: Omit<Template, "id" | "isDefault">
 ): Promise<Template> {
-  const custom = await readCustomTemplates()
-  const newTemplate: Template = {
-    ...t,
-    id: crypto.randomUUID(),
-    isDefault: false,
-  }
-  custom.push(newTemplate)
-  await writeCustomTemplates(custom)
-  return newTemplate
+  return withFileLock(TEMPLATES_FILE, async () => {
+    const custom = await readCustomTemplates()
+    const newTemplate: Template = {
+      ...t,
+      id: crypto.randomUUID(),
+      isDefault: false,
+    }
+    custom.push(newTemplate)
+    await writeCustomTemplates(custom)
+    return newTemplate
+  })
 }
 
 export async function deleteTemplate(id: string): Promise<void> {
-  const custom = await readCustomTemplates()
-  // Only allow deleting custom templates
-  const filtered = custom.filter((t) => t.id !== id)
-  await writeCustomTemplates(filtered)
+  return withFileLock(TEMPLATES_FILE, async () => {
+    const custom = await readCustomTemplates()
+    // Only allow deleting custom templates
+    const filtered = custom.filter((t) => t.id !== id)
+    await writeCustomTemplates(filtered)
+  })
 }

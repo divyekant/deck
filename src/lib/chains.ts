@@ -2,6 +2,7 @@ import { promises as fs } from "fs"
 import path from "path"
 import os from "os"
 import crypto from "crypto"
+import { withFileLock } from "./file-lock"
 
 const DECK_DIR = path.join(os.homedir(), ".deck")
 const CHAINS_FILE = path.join(DECK_DIR, "chains.json")
@@ -50,54 +51,62 @@ export async function createChain(
   name: string,
   sessionIds: string[]
 ): Promise<Chain> {
-  const data = await readChains()
-  const now = new Date().toISOString()
-  const chain: Chain = {
-    id: crypto.randomUUID(),
-    name,
-    sessionIds,
-    createdAt: now,
-    updatedAt: now,
-  }
-  data.chains.push(chain)
-  await writeChains(data)
-  return chain
+  return withFileLock(CHAINS_FILE, async () => {
+    const data = await readChains()
+    const now = new Date().toISOString()
+    const chain: Chain = {
+      id: crypto.randomUUID(),
+      name,
+      sessionIds,
+      createdAt: now,
+      updatedAt: now,
+    }
+    data.chains.push(chain)
+    await writeChains(data)
+    return chain
+  })
 }
 
 export async function addToChain(
   chainId: string,
   sessionId: string
 ): Promise<Chain> {
-  const data = await readChains()
-  const chain = data.chains.find((c) => c.id === chainId)
-  if (!chain) {
-    throw new Error(`Chain not found: ${chainId}`)
-  }
-  if (!chain.sessionIds.includes(sessionId)) {
-    chain.sessionIds.push(sessionId)
-    chain.updatedAt = new Date().toISOString()
-    await writeChains(data)
-  }
-  return chain
+  return withFileLock(CHAINS_FILE, async () => {
+    const data = await readChains()
+    const chain = data.chains.find((c) => c.id === chainId)
+    if (!chain) {
+      throw new Error(`Chain not found: ${chainId}`)
+    }
+    if (!chain.sessionIds.includes(sessionId)) {
+      chain.sessionIds.push(sessionId)
+      chain.updatedAt = new Date().toISOString()
+      await writeChains(data)
+    }
+    return chain
+  })
 }
 
 export async function removeFromChain(
   chainId: string,
   sessionId: string
 ): Promise<Chain> {
-  const data = await readChains()
-  const chain = data.chains.find((c) => c.id === chainId)
-  if (!chain) {
-    throw new Error(`Chain not found: ${chainId}`)
-  }
-  chain.sessionIds = chain.sessionIds.filter((id) => id !== sessionId)
-  chain.updatedAt = new Date().toISOString()
-  await writeChains(data)
-  return chain
+  return withFileLock(CHAINS_FILE, async () => {
+    const data = await readChains()
+    const chain = data.chains.find((c) => c.id === chainId)
+    if (!chain) {
+      throw new Error(`Chain not found: ${chainId}`)
+    }
+    chain.sessionIds = chain.sessionIds.filter((id) => id !== sessionId)
+    chain.updatedAt = new Date().toISOString()
+    await writeChains(data)
+    return chain
+  })
 }
 
 export async function deleteChain(id: string): Promise<void> {
-  const data = await readChains()
-  data.chains = data.chains.filter((c) => c.id !== id)
-  await writeChains(data)
+  return withFileLock(CHAINS_FILE, async () => {
+    const data = await readChains()
+    data.chains = data.chains.filter((c) => c.id !== id)
+    await writeChains(data)
+  })
 }

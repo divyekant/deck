@@ -2,6 +2,7 @@ import { promises as fs } from "fs"
 import path from "path"
 import os from "os"
 import crypto from "crypto"
+import { withFileLock } from "./file-lock"
 
 const DECK_DIR = path.join(os.homedir(), ".deck")
 const ANNOTATIONS_FILE = path.join(DECK_DIR, "annotations.json")
@@ -75,44 +76,52 @@ export async function getAllAnnotations(): Promise<AnnotationsStore> {
 
 /** Add a note to a session. Returns the created Note. */
 export async function addNote(sessionId: string, text: string): Promise<Note> {
-  const store = await readStore()
-  const session = ensureSession(store, sessionId)
-  const note: Note = {
-    id: crypto.randomUUID(),
-    text,
-    createdAt: new Date().toISOString(),
-  }
-  session.notes.push(note)
-  await writeStore(store)
-  return note
+  return withFileLock(ANNOTATIONS_FILE, async () => {
+    const store = await readStore()
+    const session = ensureSession(store, sessionId)
+    const note: Note = {
+      id: crypto.randomUUID(),
+      text,
+      createdAt: new Date().toISOString(),
+    }
+    session.notes.push(note)
+    await writeStore(store)
+    return note
+  })
 }
 
 /** Remove a note by ID from a session */
 export async function removeNote(sessionId: string, noteId: string): Promise<void> {
-  const store = await readStore()
-  const session = store[sessionId]
-  if (!session) return
-  session.notes = session.notes.filter((n) => n.id !== noteId)
-  await writeStore(store)
+  return withFileLock(ANNOTATIONS_FILE, async () => {
+    const store = await readStore()
+    const session = store[sessionId]
+    if (!session) return
+    session.notes = session.notes.filter((n) => n.id !== noteId)
+    await writeStore(store)
+  })
 }
 
 /** Add a tag to a session */
 export async function addTag(sessionId: string, tag: string): Promise<void> {
-  const store = await readStore()
-  const session = ensureSession(store, sessionId)
-  const normalized = tag.trim().toLowerCase()
-  if (!normalized || session.tags.includes(normalized)) return
-  session.tags.push(normalized)
-  await writeStore(store)
+  return withFileLock(ANNOTATIONS_FILE, async () => {
+    const store = await readStore()
+    const session = ensureSession(store, sessionId)
+    const normalized = tag.trim().toLowerCase()
+    if (!normalized || session.tags.includes(normalized)) return
+    session.tags.push(normalized)
+    await writeStore(store)
+  })
 }
 
 /** Remove a tag from a session */
 export async function removeTag(sessionId: string, tag: string): Promise<void> {
-  const store = await readStore()
-  const session = store[sessionId]
-  if (!session) return
-  session.tags = session.tags.filter((t) => t !== tag)
-  await writeStore(store)
+  return withFileLock(ANNOTATIONS_FILE, async () => {
+    const store = await readStore()
+    const session = store[sessionId]
+    if (!session) return
+    session.tags = session.tags.filter((t) => t !== tag)
+    await writeStore(store)
+  })
 }
 
 // ---- Backward-compatible helpers (used by existing API route / consumers) ----
@@ -131,28 +140,32 @@ export async function getAllTags(): Promise<string[]> {
 
 /** Set tags for a session (replaces all tags). Used by bulk-tag in sessions list. */
 export async function setSessionTags(sessionId: string, tags: string[]): Promise<void> {
-  const store = await readStore()
-  const session = ensureSession(store, sessionId)
-  session.tags = tags.map((t) => t.trim().toLowerCase()).filter(Boolean)
-  await writeStore(store)
+  return withFileLock(ANNOTATIONS_FILE, async () => {
+    const store = await readStore()
+    const session = ensureSession(store, sessionId)
+    session.tags = tags.map((t) => t.trim().toLowerCase()).filter(Boolean)
+    await writeStore(store)
+  })
 }
 
 /** Set/replace the session note (stored as a single note for backward compat). */
 export async function setSessionNote(sessionId: string, noteText: string): Promise<void> {
-  const store = await readStore()
-  const session = ensureSession(store, sessionId)
+  return withFileLock(ANNOTATIONS_FILE, async () => {
+    const store = await readStore()
+    const session = ensureSession(store, sessionId)
 
-  // If a "quick note" already exists (convention: first note with id starting with "quick-"),
-  // update it. Otherwise add one.
-  const quickIdx = session.notes.findIndex((n) => n.id.startsWith("quick-"))
-  if (quickIdx >= 0) {
-    session.notes[quickIdx].text = noteText
-  } else if (noteText.trim()) {
-    session.notes.unshift({
-      id: `quick-${crypto.randomUUID()}`,
-      text: noteText,
-      createdAt: new Date().toISOString(),
-    })
-  }
-  await writeStore(store)
+    // If a "quick note" already exists (convention: first note with id starting with "quick-"),
+    // update it. Otherwise add one.
+    const quickIdx = session.notes.findIndex((n) => n.id.startsWith("quick-"))
+    if (quickIdx >= 0) {
+      session.notes[quickIdx].text = noteText
+    } else if (noteText.trim()) {
+      session.notes.unshift({
+        id: `quick-${crypto.randomUUID()}`,
+        text: noteText,
+        createdAt: new Date().toISOString(),
+      })
+    }
+    await writeStore(store)
+  })
 }

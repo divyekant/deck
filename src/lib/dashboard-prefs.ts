@@ -1,6 +1,7 @@
 import { promises as fs } from "fs"
 import path from "path"
 import os from "os"
+import { withFileLock } from "./file-lock"
 
 const DECK_DIR = path.join(os.homedir(), ".deck")
 const PREFS_FILE = path.join(DECK_DIR, "dashboard-prefs.json")
@@ -52,5 +53,7 @@ export async function getPrefs(): Promise<DashboardPrefs> {
 }
 
 export async function savePrefs(prefs: DashboardPrefs): Promise<void> {
-  await writePrefs(prefs)
+  return withFileLock(PREFS_FILE, async () => {
+    await writePrefs(prefs)
+  })
 }

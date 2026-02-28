@@ -1,4 +1,4 @@
-import { execSync } from "child_process"
+import { execFileSync } from "child_process"
 import Link from "next/link"
 import { MessageSquare, DollarSign, Cpu, Calendar, GitCommitHorizontal } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -38,11 +38,12 @@ export default async function Home() {
   let commitsToday = 0
   for (const project of projectDirs) {
     try {
-      const output = execSync(
-        `git -C "${project.path}" log --oneline --since="midnight" 2>/dev/null | wc -l`,
-        { encoding: "utf-8", timeout: 5000 }
-      )
-      commitsToday += parseInt(output.trim(), 10) || 0
+      const output = execFileSync(
+        "git",
+        ["-C", project.path, "log", "--oneline", "--since=midnight"],
+        { encoding: "utf-8", timeout: 5000, stdio: ["pipe", "pipe", "pipe"] }
+      ).trim()
+      commitsToday += output ? output.split("\n").filter(Boolean).length : 0
     } catch {
       // Not a git repo or git failed — skip
     }

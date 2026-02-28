@@ -25,11 +25,7 @@ import {
 import { formatCost, formatTokens } from "@/lib/claude/costs"
 import { getProjectColor } from "@/lib/project-colors"
 import type { SessionMeta } from "@/lib/claude/types"
-
-function truncate(str: string, max: number): string {
-  if (str.length <= max) return str
-  return str.slice(0, max).trimEnd() + "..."
-}
+import { truncate } from "@/lib/format"
 
 function formatDate(dateStr: string): string {
   const now = Date.now()
@@ -348,19 +344,15 @@ function SessionsContent() {
     fetchSessions()
   }, [fetchSessions])
 
-  // Fetch bookmarks on mount
+  // Load bookmarked session IDs from localStorage on mount
   useEffect(() => {
-    async function fetchBookmarks() {
-      try {
-        const res = await fetch("/api/bookmarks")
-        if (!res.ok) return
-        const data = await res.json()
-        setBookmarks(new Set(data.bookmarks))
-      } catch {
-        // Bookmarks are non-critical, fail silently
-      }
+    try {
+      const stored = localStorage.getItem("deck-bookmarked-sessions")
+      const ids = stored ? new Set<string>(JSON.parse(stored)) : new Set<string>()
+      setBookmarks(ids)
+    } catch {
+      // Fail silently — localStorage may be unavailable
     }
-    fetchBookmarks()
   }, [])
 
   // Fetch annotations on mount
@@ -379,29 +371,23 @@ function SessionsContent() {
     fetchAnnotations()
   }, [])
 
-  // Toggle bookmark handler
-  const handleToggleBookmark = useCallback(async (e: MouseEvent, sessionId: string) => {
+  // Toggle bookmark handler (localStorage-based, no API call)
+  const handleToggleBookmark = useCallback((e: MouseEvent, sessionId: string) => {
     e.stopPropagation() // Don't navigate to session
-    try {
-      const res = await fetch("/api/bookmarks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId }),
-      })
-      if (!res.ok) return
-      const data = await res.json()
-      setBookmarks((prev) => {
-        const next = new Set(prev)
-        if (data.bookmarked) {
-          next.add(sessionId)
-        } else {
-          next.delete(sessionId)
-        }
-        return next
-      })
-    } catch {
-      // Fail silently
-    }
+    setBookmarks((prev) => {
+      const next = new Set(prev)
+      if (next.has(sessionId)) {
+        next.delete(sessionId)
+      } else {
+        next.add(sessionId)
+      }
+      try {
+        localStorage.setItem("deck-bookmarked-sessions", JSON.stringify([...next]))
+      } catch {
+        // localStorage may be unavailable
+      }
+      return next
+    })
   }, [])
 
   // Bulk selection handlers
@@ -457,25 +443,20 @@ function SessionsContent() {
     } catch { /* fail silently */ }
   }, [selectedIds, annotations])
 
-  const handleBulkBookmark = useCallback(async () => {
-    const promises = Array.from(selectedIds)
-      .filter((id) => !bookmarks.has(id))
-      .map((sessionId) =>
-        fetch("/api/bookmarks", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionId }),
-        })
-      )
-    await Promise.all(promises)
+  const handleBulkBookmark = useCallback(() => {
     setBookmarks((prev) => {
       const next = new Set(prev)
       for (const id of selectedIds) {
         next.add(id)
       }
+      try {
+        localStorage.setItem("deck-bookmarked-sessions", JSON.stringify([...next]))
+      } catch {
+        // localStorage may be unavailable
+      }
       return next
     })
-  }, [selectedIds, bookmarks])
+  }, [selectedIds])
 
   // Auto-refresh: visibilitychange + 30s polling
   useEffect(() => {

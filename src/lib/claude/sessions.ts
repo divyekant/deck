@@ -173,9 +173,12 @@ async function getCodexSessions(): Promise<SessionMeta[]> {
  * Populated lazily when getSession needs to find a Codex session.
  */
 const codexIdToFile = new Map<string, string>();
+let codexIdMapBuiltAt = 0;
+const CODEX_MAP_TTL = 30_000; // 30 seconds
 
 async function ensureCodexIdMap(): Promise<void> {
-  if (codexIdToFile.size > 0) return;
+  if (codexIdToFile.size > 0 && Date.now() - codexIdMapBuiltAt < CODEX_MAP_TTL) return;
+  codexIdToFile.clear();
   const files = await getCodexSessionFiles();
   for (const filePath of files) {
     const base = path.basename(filePath, ".jsonl");
@@ -186,15 +189,25 @@ async function ensureCodexIdMap(): Promise<void> {
     const id = uuidMatch ? uuidMatch[1] : base;
     codexIdToFile.set(id, filePath);
   }
+  codexIdMapBuiltAt = Date.now();
 }
 
 // ---- Session Listing ----
 
+// Short-lived cache for listSessions() — avoids redundant scans when
+// multiple API routes call it within the same page load (~5s TTL).
+let listSessionsCache: { data: SessionMeta[]; at: number } | null = null;
+const LIST_SESSIONS_TTL = 5_000; // 5 seconds
+
 /**
  * List all sessions across all projects (Claude Code + Codex), sorted by startTime descending.
  * Uses mtime-based caching so unchanged files are not re-parsed.
+ * Results are also cached for 5 seconds to avoid redundant scans across API routes.
  */
 export async function listSessions(): Promise<SessionMeta[]> {
+  if (listSessionsCache && Date.now() - listSessionsCache.at < LIST_SESSIONS_TTL) {
+    return listSessionsCache.data;
+  }
   const projects = await getProjectDirs();
   const allMetas: SessionMeta[] = [];
 
@@ -240,6 +253,7 @@ export async function listSessions(): Promise<SessionMeta[]> {
     (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
   );
 
+  listSessionsCache = { data: allMetas, at: Date.now() };
   return allMetas;
 }
 

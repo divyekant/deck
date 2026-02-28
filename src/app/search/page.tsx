@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
+import { truncate } from "@/lib/format"
 
 // ---- Types ----
 
@@ -31,11 +32,6 @@ interface SearchResponse {
 }
 
 // ---- Helpers ----
-
-function truncate(str: string, max: number): string {
-  if (str.length <= max) return str
-  return str.slice(0, max).trimEnd() + "..."
-}
 
 const ROLE_LABELS: Record<string, string> = {
   human: "Human",

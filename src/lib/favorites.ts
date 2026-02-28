@@ -2,6 +2,7 @@ import { promises as fs } from "fs"
 import path from "path"
 import os from "os"
 import crypto from "crypto"
+import { withFileLock } from "./file-lock"
 
 const DECK_DIR = path.join(os.homedir(), ".deck")
 const FAVORITES_FILE = path.join(DECK_DIR, "favorites.json")
@@ -43,21 +44,25 @@ export async function getFavorites(): Promise<Favorite[]> {
 export async function addFavorite(
   fav: Omit<Favorite, "id" | "addedAt">
 ): Promise<Favorite> {
-  const favorites = await readFavorites()
-  const newFavorite: Favorite = {
-    ...fav,
-    id: crypto.randomUUID(),
-    addedAt: new Date().toISOString(),
-  }
-  favorites.push(newFavorite)
-  await writeFavorites(favorites)
-  return newFavorite
+  return withFileLock(FAVORITES_FILE, async () => {
+    const favorites = await readFavorites()
+    const newFavorite: Favorite = {
+      ...fav,
+      id: crypto.randomUUID(),
+      addedAt: new Date().toISOString(),
+    }
+    favorites.push(newFavorite)
+    await writeFavorites(favorites)
+    return newFavorite
+  })
 }
 
 export async function removeFavorite(id: string): Promise<void> {
-  const favorites = await readFavorites()
-  const filtered = favorites.filter((f) => f.id !== id)
-  await writeFavorites(filtered)
+  return withFileLock(FAVORITES_FILE, async () => {
+    const favorites = await readFavorites()
+    const filtered = favorites.filter((f) => f.id !== id)
+    await writeFavorites(filtered)
+  })
 }
 
 export async function isFavorite(

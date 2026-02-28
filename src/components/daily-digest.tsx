@@ -84,7 +84,8 @@ export function DailyDigest({ sessions }: DailyDigestProps) {
     (sum, s) => sum + s.totalInputTokens,
     0
   )
-  const cacheHitRate = totalInput > 0 ? (totalCacheRead / totalInput) * 100 : 0
+  const cacheTotal = totalCacheRead + totalInput
+  const cacheHitRate = cacheTotal > 0 ? (totalCacheRead / cacheTotal) * 100 : 0
 
   // Top project by cost
   const projectCostMap = new Map<string, number>()

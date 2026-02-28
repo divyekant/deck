@@ -1,4 +1,4 @@
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
 import Link from "next/link";
 import {
   GitCommitHorizontal,
@@ -31,11 +31,12 @@ interface RepoPulse {
   lastSessionDate: string | null;
 }
 
-function gitCommand(projectPath: string, cmd: string): string {
+function gitCommand(projectPath: string, args: string[]): string {
   try {
-    return execSync(`git -C "${projectPath}" ${cmd} 2>/dev/null`, {
+    return execFileSync("git", ["-C", projectPath, ...args], {
       encoding: "utf-8",
       timeout: 5000,
+      stdio: ["pipe", "pipe", "pipe"],
     }).trim();
   } catch {
     return "";
@@ -93,17 +94,21 @@ async function getPulseData() {
   const repos: RepoPulse[] = [];
 
   for (const project of projectDirs) {
-    const commitCountStr = gitCommand(
+    const commitOutput = gitCommand(
       project.path,
-      'log --oneline --since="7 days ago" | wc -l'
+      ["log", "--oneline", "--since=7 days ago"]
     );
-    const commitsThisWeek = parseInt(commitCountStr.trim(), 10) || 0;
+    const commitsThisWeek = commitOutput
+      ? commitOutput.split("\n").filter(Boolean).length
+      : 0;
     totalCommitsThisWeek += commitsThisWeek;
 
-    const branchCountStr = gitCommand(project.path, "branch --list | wc -l");
-    const branches = parseInt(branchCountStr.trim(), 10) || 0;
+    const branchOutput = gitCommand(project.path, ["branch", "--list"]);
+    const branches = branchOutput
+      ? branchOutput.split("\n").filter(Boolean).length
+      : 0;
 
-    const lastCommitDateStr = gitCommand(project.path, "log -1 --format=%ci");
+    const lastCommitDateStr = gitCommand(project.path, ["log", "-1", "--format=%ci"]);
     const lastCommitDate = lastCommitDateStr || null;
 
     const projectSessions = sessionsByProject.get(project.name) ?? [];

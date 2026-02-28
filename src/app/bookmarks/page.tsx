@@ -6,6 +6,7 @@ import { Bookmark as BookmarkIcon, Search, X } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
+import { formatRelativeDate } from "@/lib/format"
 
 interface Bookmark {
   id: string
@@ -14,22 +15,6 @@ interface Bookmark {
   messagePreview: string
   project: string
   createdAt: string
-}
-
-function formatRelativeTime(timestamp: string): string {
-  const diffMs = Date.now() - new Date(timestamp).getTime()
-  const diffMin = Math.floor(diffMs / 60000)
-
-  if (diffMin < 1) return "just now"
-  if (diffMin < 60) return `${diffMin}m ago`
-  const diffHr = Math.floor(diffMin / 60)
-  if (diffHr < 24) return `${diffHr}h ago`
-  const diffDay = Math.floor(diffHr / 24)
-  if (diffDay < 7) return `${diffDay}d ago`
-  return new Date(timestamp).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  })
 }
 
 export default function BookmarksPage() {
@@ -177,7 +162,7 @@ export default function BookmarksPage() {
                         {bookmark.project}
                       </Badge>
                       <span className="text-xs text-zinc-600">
-                        {formatRelativeTime(bookmark.createdAt)}
+                        {formatRelativeDate(bookmark.createdAt)}
                       </span>
                     </div>
 

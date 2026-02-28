@@ -5,6 +5,7 @@ import Link from "next/link"
 import { formatCost } from "@/lib/claude/costs"
 import CostTips from "@/components/cost-tips"
 import CostForecast from "@/components/cost-forecast"
+import { truncate } from "@/lib/format"
 
 type Range = "thisMonth" | "lastMonth" | "90d" | "all"
 
@@ -59,11 +60,6 @@ function formatDateLabel(dateStr: string): string {
 function formatDateShort(dateStr: string): string {
   const d = new Date(dateStr)
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-}
-
-function truncate(str: string, max: number): string {
-  if (str.length <= max) return str
-  return str.slice(0, max).trimEnd() + "..."
 }
 
 function getModelColor(model: string): string {

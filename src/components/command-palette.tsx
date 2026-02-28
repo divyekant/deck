@@ -34,10 +34,14 @@ import {
   Eye,
   Terminal,
   Info,
+  TrendingUp,
+  FileDiff,
+  Sparkles,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { VisuallyHidden } from "radix-ui"
 import type { SessionMeta } from "@/lib/claude/types"
+import { truncate } from "@/lib/format"
 
 interface PaletteItem {
   id: string
@@ -76,6 +80,9 @@ const PAGES: PaletteItem[] = [
   { id: "insights", label: "Insights", section: "Pages", href: "/insights", icon: Lightbulb },
   { id: "focus", label: "Focus Mode", section: "Pages", href: "/focus", icon: Eye },
   { id: "commands", label: "Command History", section: "Pages", href: "/commands", icon: Terminal },
+  { id: "analytics", label: "Analytics", section: "Pages", href: "/analytics", icon: TrendingUp },
+  { id: "diffs", label: "Diffs", section: "Pages", href: "/diffs", icon: FileDiff },
+  { id: "skills", label: "Skills", section: "Pages", href: "/skills", icon: Sparkles },
   { id: "about", label: "About Deck", section: "Pages", href: "/about", icon: Info },
   { id: "mcp", label: "MCP Servers", section: "Pages", href: "/mcp", icon: Puzzle },
   { id: "settings", label: "Settings", section: "Pages", href: "/settings", icon: Settings },
@@ -84,11 +91,6 @@ const PAGES: PaletteItem[] = [
 const ACTIONS: PaletteItem[] = [
   { id: "new-session", label: "New Session", section: "Actions", href: "/sessions/new", icon: Plus },
 ]
-
-function truncate(str: string, max: number): string {
-  if (str.length <= max) return str
-  return str.slice(0, max).trimEnd() + "..."
-}
 
 export function CommandPalette() {
   const router = useRouter()

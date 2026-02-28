@@ -196,6 +196,9 @@ async function extractCommandsFromFile(
 
 // ---- Route Handler ----
 
+const MAX_SESSION_FILES = 100;
+const MAX_COMMANDS_BEFORE_STOP = 500;
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -212,20 +215,34 @@ export async function GET(request: NextRequest) {
     const projects = await getProjectDirs();
     const allCommands: CommandEntry[] = [];
 
+    // Collect all session files across projects, then sort by mtime desc and cap
+    const allFiles: { filePath: string; project: string; mtime: number }[] = [];
     for (const project of projects) {
       const files = await getSessionFiles(project.dirName);
-
       for (const filePath of files) {
         try {
-          const commands = await extractCommandsFromFile(
-            filePath,
-            project.name
-          );
-          allCommands.push(...commands);
+          const stat = await fs.stat(filePath);
+          allFiles.push({ filePath, project: project.name, mtime: stat.mtimeMs });
         } catch {
-          // Skip files that can't be read or parsed
+          // Skip files that can't be stat'd
           continue;
         }
+      }
+    }
+
+    // Sort most-recent-first and limit to MAX_SESSION_FILES
+    allFiles.sort((a, b) => b.mtime - a.mtime);
+    const cappedFiles = allFiles.slice(0, MAX_SESSION_FILES);
+
+    for (const { filePath, project } of cappedFiles) {
+      try {
+        const commands = await extractCommandsFromFile(filePath, project);
+        allCommands.push(...commands);
+        // Early termination: stop scanning once we have enough commands
+        if (allCommands.length >= MAX_COMMANDS_BEFORE_STOP) break;
+      } catch {
+        // Skip files that can't be read or parsed
+        continue;
       }
     }
 

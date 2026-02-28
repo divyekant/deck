@@ -1,6 +1,7 @@
 import { promises as fs } from "fs"
 import path from "path"
 import os from "os"
+import { withFileLock } from "./file-lock"
 
 import type { SessionMeta } from "./claude/types"
 
@@ -31,12 +32,14 @@ export async function getDismissed(): Promise<string[]> {
 }
 
 export async function dismissNotification(id: string): Promise<void> {
-  const dismissed = await getDismissed()
-  if (!dismissed.includes(id)) {
-    dismissed.push(id)
-  }
-  await fs.mkdir(DECK_DIR, { recursive: true })
-  await fs.writeFile(NOTIFICATIONS_FILE, JSON.stringify(dismissed, null, 2), "utf-8")
+  return withFileLock(NOTIFICATIONS_FILE, async () => {
+    const dismissed = await getDismissed()
+    if (!dismissed.includes(id)) {
+      dismissed.push(id)
+    }
+    await fs.mkdir(DECK_DIR, { recursive: true })
+    await fs.writeFile(NOTIFICATIONS_FILE, JSON.stringify(dismissed, null, 2), "utf-8")
+  })
 }
 
 // ---- Generation ----

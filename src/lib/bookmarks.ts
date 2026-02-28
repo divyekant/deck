@@ -2,6 +2,7 @@ import { promises as fs } from "fs"
 import path from "path"
 import os from "os"
 import crypto from "crypto"
+import { withFileLock } from "./file-lock"
 
 const DECK_DIR = path.join(os.homedir(), ".deck")
 const BOOKMARKS_FILE = path.join(DECK_DIR, "bookmarks.json")
@@ -44,19 +45,23 @@ export async function getBookmarks(): Promise<Bookmark[]> {
 export async function addBookmark(
   bookmark: Omit<Bookmark, "id" | "createdAt">
 ): Promise<Bookmark> {
-  const bookmarks = await readBookmarks()
-  const newBookmark: Bookmark = {
-    ...bookmark,
-    id: crypto.randomUUID(),
-    createdAt: new Date().toISOString(),
-  }
-  bookmarks.push(newBookmark)
-  await writeBookmarks(bookmarks)
-  return newBookmark
+  return withFileLock(BOOKMARKS_FILE, async () => {
+    const bookmarks = await readBookmarks()
+    const newBookmark: Bookmark = {
+      ...bookmark,
+      id: crypto.randomUUID(),
+      createdAt: new Date().toISOString(),
+    }
+    bookmarks.push(newBookmark)
+    await writeBookmarks(bookmarks)
+    return newBookmark
+  })
 }
 
 export async function removeBookmark(id: string): Promise<void> {
-  const bookmarks = await readBookmarks()
-  const filtered = bookmarks.filter((b) => b.id !== id)
-  await writeBookmarks(filtered)
+  return withFileLock(BOOKMARKS_FILE, async () => {
+    const bookmarks = await readBookmarks()
+    const filtered = bookmarks.filter((b) => b.id !== id)
+    await writeBookmarks(filtered)
+  })
 }

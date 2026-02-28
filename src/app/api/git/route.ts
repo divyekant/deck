@@ -1,4 +1,4 @@
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
 import { NextResponse } from "next/server";
 
 import { getProjectDirs } from "@/lib/claude/sessions";
@@ -22,11 +22,12 @@ export interface GitData {
   projects: GitProject[];
 }
 
-function gitCommand(projectPath: string, cmd: string): string {
+function gitCommand(projectPath: string, args: string[]): string {
   try {
-    return execSync(`git -C "${projectPath}" ${cmd} 2>/dev/null`, {
+    return execFileSync("git", ["-C", projectPath, ...args], {
       encoding: "utf-8",
       timeout: 5000,
+      stdio: ["pipe", "pipe", "pipe"],
     }).trim();
   } catch {
     return "";
@@ -41,13 +42,13 @@ export async function GET() {
 
     for (const project of projectDirs) {
       // Check if this is a valid git repo
-      const gitCheck = gitCommand(project.path, "rev-parse --git-dir");
+      const gitCheck = gitCommand(project.path, ["rev-parse", "--git-dir"]);
       if (!gitCheck) continue;
 
       // Recent commits (last 20)
       const commitLog = gitCommand(
         project.path,
-        'log --oneline -20 --format="%H|%s|%ai|%an"'
+        ["log", "--oneline", "-20", "--format=%H|%s|%ai|%an"]
       );
       const recentCommits: GitCommit[] = commitLog
         ? commitLog
@@ -60,7 +61,7 @@ export async function GET() {
         : [];
 
       // Branches
-      const branchOutput = gitCommand(project.path, "branch --list");
+      const branchOutput = gitCommand(project.path, ["branch", "--list"]);
       const branches = branchOutput
         ? branchOutput
             .split("\n")
@@ -71,7 +72,7 @@ export async function GET() {
       // Commit dates for last 30 days (for frequency chart)
       const commitDatesOutput = gitCommand(
         project.path,
-        'log --since="30 days ago" --format="%ai"'
+        ["log", "--since=30 days ago", "--format=%ai"]
       );
       const commitDates = commitDatesOutput
         ? commitDatesOutput.split("\n").filter(Boolean)
@@ -79,7 +80,7 @@ export async function GET() {
 
       projects.push({
         name: project.name,
-        path: project.path,
+        path: project.path.replace(/^\/Users\/[^/]+/, "~"),
         recentCommits,
         branches,
         commitDates,
