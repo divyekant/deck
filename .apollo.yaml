@@ -1,0 +1,4 @@
+# Apollo project config for Deck
+# Inherits from: ~/.apollo/defaults.yaml
+
+version: 2.0.0
