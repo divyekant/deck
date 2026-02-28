@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo, useCallback } from "react"
 import Link from "next/link"
 import { formatCost } from "@/lib/claude/costs"
 import CostTips from "@/components/cost-tips"
+import CostForecast from "@/components/cost-forecast"
 
 type Range = "thisMonth" | "lastMonth" | "90d" | "all"
 
@@ -414,6 +415,9 @@ export default function CostsPage() {
             </h2>
             <DailyCostChart data={data.dailyCosts} />
           </div>
+
+          {/* Cost Forecast */}
+          <CostForecast dailyCosts={data.dailyCosts} monthlyBudget={200} />
 
           {/* Two-column grid: Model + Project breakdowns */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

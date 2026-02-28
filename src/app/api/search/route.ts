@@ -8,22 +8,25 @@ import type {
   ThinkingBlock,
 } from "@/lib/claude/types";
 
-interface SearchResult {
-  sessionId: string;
-  projectName: string;
-  model: string;
-  startTime: string;
-  firstPrompt: string;
-  matchType: "user" | "assistant" | "thinking";
+interface MatchInfo {
+  messageIndex: number;
   snippet: string;
-  matchIndex: number;
+  role: "human" | "assistant" | "thinking";
 }
 
-const MAX_RESULTS = 50;
-const CONTEXT_CHARS = 80;
+interface SessionSearchResult {
+  sessionId: string;
+  project: string;
+  firstPrompt: string;
+  matchCount: number;
+  matches: MatchInfo[];
+}
+
+const DEFAULT_LIMIT = 20;
+const CONTEXT_CHARS = 100;
 
 /**
- * Build a context snippet around a match, trimmed to word boundaries.
+ * Build a context snippet around a match, with ~100 chars of context on each side.
  * The matched term is wrapped in **bold** markers for the client to render.
  */
 function buildSnippet(text: string, matchStart: number, queryLen: number): string {
@@ -33,7 +36,7 @@ function buildSnippet(text: string, matchStart: number, queryLen: number): strin
   let start = before;
   let end = after;
 
-  // Trim to word boundary (forward for start, backward for end)
+  // Trim to word boundary
   if (start > 0) {
     const spaceIdx = text.indexOf(" ", start);
     if (spaceIdx !== -1 && spaceIdx < matchStart) {
@@ -50,7 +53,6 @@ function buildSnippet(text: string, matchStart: number, queryLen: number): strin
   const prefix = start > 0 ? "..." : "";
   const suffix = end < text.length ? "..." : "";
 
-  // Reconstruct with the matched portion bolded
   const slice = text.slice(start, end);
   const matchInSlice = matchStart - start;
   const highlighted =
@@ -64,50 +66,37 @@ function buildSnippet(text: string, matchStart: number, queryLen: number): strin
 }
 
 /**
- * Search a text for the query (case-insensitive) and push results.
- * Returns true if we've hit the result limit.
+ * Search a text for the query (case-insensitive) and return the first match snippet.
+ * We return at most one snippet per message to keep results meaningful.
  */
-function searchText(
+function findFirstMatch(
   text: string,
   queryLower: string,
-  matchType: "user" | "assistant" | "thinking",
-  sessionId: string,
-  projectName: string,
-  model: string,
-  startTime: string,
-  firstPrompt: string,
-  results: SearchResult[]
-): boolean {
+): { snippet: string; count: number } | null {
   const textLower = text.toLowerCase();
+  const idx = textLower.indexOf(queryLower);
+  if (idx === -1) return null;
+
+  // Count all occurrences in this text
+  let count = 0;
   let searchFrom = 0;
-
-  while (results.length < MAX_RESULTS) {
-    const idx = textLower.indexOf(queryLower, searchFrom);
-    if (idx === -1) break;
-
-    results.push({
-      sessionId,
-      projectName,
-      model,
-      startTime,
-      firstPrompt,
-      matchType,
-      snippet: buildSnippet(text, idx, queryLower.length),
-      matchIndex: results.length,
-    });
-
-    // Move past this match to find the next one in the same text
-    searchFrom = idx + queryLower.length;
+  while (true) {
+    const found = textLower.indexOf(queryLower, searchFrom);
+    if (found === -1) break;
+    count++;
+    searchFrom = found + queryLower.length;
   }
 
-  return results.length >= MAX_RESULTS;
+  return {
+    snippet: buildSnippet(text, idx, queryLower.length),
+    count,
+  };
 }
 
 function extractUserText(msg: SessionMessage): string | null {
   if (msg.type !== "user") return null;
   const content = msg.message.content;
   if (typeof content === "string") return content;
-  // ContentBlock[] — extract text blocks
   return (content as ContentBlock[])
     .filter((b): b is TextBlock => b.type === "text")
     .map((b) => b.text)
@@ -115,7 +104,10 @@ function extractUserText(msg: SessionMessage): string | null {
 }
 
 export async function GET(request: NextRequest) {
-  const q = request.nextUrl.searchParams.get("q");
+  const params = request.nextUrl.searchParams;
+  const q = params.get("q");
+  const limit = Math.max(1, Math.min(100, parseInt(params.get("limit") || String(DEFAULT_LIMIT), 10) || DEFAULT_LIMIT));
+  const offset = Math.max(0, parseInt(params.get("offset") || "0", 10) || 0);
 
   if (!q || q.trim() === "") {
     return NextResponse.json(
@@ -125,78 +117,93 @@ export async function GET(request: NextRequest) {
   }
 
   const queryLower = q.trim().toLowerCase();
-  const results: SearchResult[] = [];
 
   try {
     // Sessions are already sorted most-recent-first
     const sessions = await listSessions();
 
-    for (const meta of sessions) {
-      if (results.length >= MAX_RESULTS) break;
+    // Collect all session-level results first so we can count total
+    const allSessionResults: SessionSearchResult[] = [];
 
+    for (const meta of sessions) {
       const detail = await getSession(meta.id);
       if (!detail) continue;
 
-      for (const msg of detail.messages) {
-        if (results.length >= MAX_RESULTS) break;
+      const matches: MatchInfo[] = [];
+      let sessionMatchCount = 0;
+
+      for (let msgIdx = 0; msgIdx < detail.messages.length; msgIdx++) {
+        const msg = detail.messages[msgIdx];
 
         if (msg.type === "user") {
           const text = extractUserText(msg);
           if (text) {
-            const done = searchText(
-              text,
-              queryLower,
-              "user",
-              meta.id,
-              meta.projectName,
-              meta.model,
-              meta.startTime,
-              meta.firstPrompt,
-              results
-            );
-            if (done) break;
+            const result = findFirstMatch(text, queryLower);
+            if (result) {
+              sessionMatchCount += result.count;
+              matches.push({
+                messageIndex: msgIdx,
+                snippet: result.snippet,
+                role: "human",
+              });
+            }
           }
         } else if (msg.type === "assistant") {
           const blocks = msg.message.content;
+          let foundInMessage = false;
+
           for (const block of blocks) {
-            if (results.length >= MAX_RESULTS) break;
+            if (foundInMessage) break;
 
             if (block.type === "text") {
-              const done = searchText(
-                (block as TextBlock).text,
-                queryLower,
-                "assistant",
-                meta.id,
-                meta.projectName,
-                meta.model,
-                meta.startTime,
-                meta.firstPrompt,
-                results
-              );
-              if (done) break;
+              const result = findFirstMatch((block as TextBlock).text, queryLower);
+              if (result) {
+                sessionMatchCount += result.count;
+                if (!foundInMessage) {
+                  matches.push({
+                    messageIndex: msgIdx,
+                    snippet: result.snippet,
+                    role: "assistant",
+                  });
+                  foundInMessage = true;
+                }
+              }
             } else if (block.type === "thinking") {
-              const done = searchText(
-                (block as ThinkingBlock).thinking,
-                queryLower,
-                "thinking",
-                meta.id,
-                meta.projectName,
-                meta.model,
-                meta.startTime,
-                meta.firstPrompt,
-                results
-              );
-              if (done) break;
+              const result = findFirstMatch((block as ThinkingBlock).thinking, queryLower);
+              if (result) {
+                sessionMatchCount += result.count;
+                if (!foundInMessage) {
+                  matches.push({
+                    messageIndex: msgIdx,
+                    snippet: result.snippet,
+                    role: "thinking",
+                  });
+                  foundInMessage = true;
+                }
+              }
             }
           }
         }
       }
+
+      if (matches.length > 0) {
+        allSessionResults.push({
+          sessionId: meta.id,
+          project: meta.projectName,
+          firstPrompt: meta.firstPrompt,
+          matchCount: sessionMatchCount,
+          matches: matches.slice(0, 5), // Cap snippets per session
+        });
+      }
     }
 
+    const total = allSessionResults.length;
+    const paged = allSessionResults.slice(offset, offset + limit);
+
     return NextResponse.json({
-      results,
+      results: paged,
+      total,
       query: q.trim(),
-      total: results.length,
     });
   } catch (error) {
     console.error("Search failed:", error);

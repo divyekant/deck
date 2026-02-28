@@ -1,8 +1,9 @@
 "use client"
 
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { Fragment, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import type { MouseEvent } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Bookmark, Download, Search, Star, Tag, X } from "lucide-react"
+import { Bookmark, ChevronRight, Download, Layers, Search, Star, Tag, X } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -65,6 +66,86 @@ function getTagClasses(tag: string): string {
   return TAG_COLORS[tag] ?? "bg-zinc-800 text-zinc-400 border-zinc-700"
 }
 
+type GroupByOption = "none" | "project" | "date" | "model"
+
+interface SessionGroup {
+  key: string
+  label: string
+  sessions: SessionMeta[]
+  totalCost: number
+}
+
+function getDateGroupLabel(dateStr: string): string {
+  const date = new Date(dateStr)
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const yesterday = new Date(today)
+  yesterday.setDate(yesterday.getDate() - 1)
+  const weekAgo = new Date(today)
+  weekAgo.setDate(weekAgo.getDate() - 7)
+  const monthAgo = new Date(today)
+  monthAgo.setMonth(monthAgo.getMonth() - 1)
+
+  if (date >= today) return "Today"
+  if (date >= yesterday) return "Yesterday"
+  if (date >= weekAgo) return "This Week"
+  if (date >= monthAgo) return "This Month"
+  return "Older"
+}
+
+const DATE_GROUP_ORDER: Record<string, number> = {
+  Today: 0,
+  Yesterday: 1,
+  "This Week": 2,
+  "This Month": 3,
+  Older: 4,
+}
+
+function groupSessions(
+  sessions: SessionMeta[],
+  groupBy: GroupByOption
+): SessionGroup[] {
+  if (groupBy === "none") return []
+
+  const map = new Map<string, SessionMeta[]>()
+
+  for (const session of sessions) {
+    let key: string
+    if (groupBy === "project") {
+      key = session.projectName
+    } else if (groupBy === "model") {
+      key = session.model
+    } else {
+      key = getDateGroupLabel(session.startTime)
+    }
+    const arr = map.get(key)
+    if (arr) {
+      arr.push(session)
+    } else {
+      map.set(key, [session])
+    }
+  }
+
+  const groups: SessionGroup[] = Array.from(map.entries()).map(
+    ([key, sessions]) => ({
+      key,
+      label: key,
+      sessions,
+      totalCost: sessions.reduce((sum, s) => sum + s.estimatedCost, 0),
+    })
+  )
+
+  if (groupBy === "date") {
+    groups.sort(
+      (a, b) => (DATE_GROUP_ORDER[a.key] ?? 99) - (DATE_GROUP_ORDER[b.key] ?? 99)
+    )
+  } else {
+    groups.sort((a, b) => a.label.localeCompare(b.label))
+  }
+
+  return groups
+}
+
 interface SessionAnnotation {
   tags: string[]
   note: string
@@ -86,6 +167,114 @@ export default function SessionsPage() {
     >
       <SessionsContent />
     </Suspense>
+  )
+}
+
+function SessionRow({
+  session,
+  idx,
+  highlightedIndex,
+  selectedIds,
+  bookmarks,
+  annotations,
+  onNavigate,
+  onToggleSelect,
+  onToggleBookmark,
+}: {
+  session: SessionMeta
+  idx: number
+  highlightedIndex: number
+  selectedIds: Set<string>
+  bookmarks: Set<string>
+  annotations: Record<string, SessionAnnotation>
+  onNavigate: (id: string) => void
+  onToggleSelect: (e: MouseEvent, id: string) => void
+  onToggleBookmark: (e: MouseEvent, id: string) => void
+}) {
+  return (
+    <TableRow
+      data-row-index={idx >= 0 ? idx : undefined}
+      className={`cursor-pointer border-zinc-800 transition-colors hover:bg-zinc-800/50 ${
+        idx >= 0 && highlightedIndex === idx ? "bg-zinc-800 ring-1 ring-zinc-600" : ""
+      }`}
+      onClick={() => onNavigate(session.id)}
+    >
+      <TableCell className="px-2">
+        <input
+          type="checkbox"
+          checked={selectedIds.has(session.id)}
+          onClick={(e) => onToggleSelect(e, session.id)}
+          onChange={() => {}}
+          className="size-3.5 rounded border-zinc-600 bg-zinc-800 accent-emerald-500 cursor-pointer"
+        />
+      </TableCell>
+      <TableCell className="px-2">
+        <button
+          onClick={(e) => onToggleBookmark(e, session.id)}
+          className="p-0.5 hover:scale-110 transition-transform"
+        >
+          <Star
+            className={`size-4 ${
+              bookmarks.has(session.id)
+                ? "fill-yellow-500 text-yellow-500"
+                : "text-zinc-600 hover:text-zinc-400"
+            }`}
+          />
+        </button>
+      </TableCell>
+      <TableCell>
+        <Badge
+          variant="secondary"
+          className={
+            session.source === "codex"
+              ? "bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px]"
+              : "bg-zinc-800 text-zinc-400 text-[10px]"
+          }
+        >
+          {session.source === "codex" ? "Codex" : "CC"}
+        </Badge>
+      </TableCell>
+      <TableCell className="font-medium text-zinc-200">
+        <span className="flex items-center gap-2">
+          <span className={`size-2 shrink-0 rounded-full ${getProjectColor(session.projectName).dot}`} />
+          {session.projectName}
+        </span>
+      </TableCell>
+      <TableCell className="max-w-xs text-zinc-400">
+        <div className="flex items-center gap-2">
+          <span className="truncate">{truncate(session.firstPrompt, 60)}</span>
+          {annotations[session.id]?.tags.map((tag) => (
+            <span
+              key={tag}
+              className={`inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-[10px] font-medium border ${getTagClasses(tag)}`}
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+      </TableCell>
+      <TableCell>
+        <Badge
+          variant="outline"
+          className="border-zinc-700 text-[10px] text-zinc-500"
+        >
+          {session.model}
+        </Badge>
+      </TableCell>
+      <TableCell className="text-right text-zinc-400">
+        {session.messageCount}
+      </TableCell>
+      <TableCell className="text-right font-mono text-xs text-zinc-500">
+        {formatTokens(session.totalInputTokens)} /{" "}
+        {formatTokens(session.totalOutputTokens)}
+      </TableCell>
+      <TableCell className="text-right text-zinc-300">
+        {formatCost(session.estimatedCost)}
+      </TableCell>
+      <TableCell className="text-right text-zinc-500">
+        {formatDate(session.startTime)}
+      </TableCell>
+    </TableRow>
   )
 }
 
@@ -129,6 +318,15 @@ function SessionsContent() {
   const [highlightedIndex, setHighlightedIndex] = useState(-1)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const tableRef = useRef<HTMLDivElement>(null)
+
+  // Grouping state
+  const [groupBy, setGroupBy] = useState<GroupByOption>(() => {
+    if (typeof window !== "undefined") {
+      return (localStorage.getItem("deck-sessions-grouping") as GroupByOption) ?? "none"
+    }
+    return "none"
+  })
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
 
   // Shared fetch function for initial load and refresh
   const fetchSessions = useCallback(async () => {
@@ -182,7 +380,7 @@ function SessionsContent() {
   }, [])
 
   // Toggle bookmark handler
-  const handleToggleBookmark = useCallback(async (e: React.MouseEvent, sessionId: string) => {
+  const handleToggleBookmark = useCallback(async (e: MouseEvent, sessionId: string) => {
     e.stopPropagation() // Don't navigate to session
     try {
       const res = await fetch("/api/bookmarks", {
@@ -207,7 +405,7 @@ function SessionsContent() {
   }, [])
 
   // Bulk selection handlers
-  const handleToggleSelect = useCallback((e: React.MouseEvent, sessionId: string) => {
+  const handleToggleSelect = useCallback((e: MouseEvent, sessionId: string) => {
     e.stopPropagation()
     setSelectedIds((prev) => {
       const next = new Set(prev)
@@ -377,6 +575,34 @@ function SessionsContent() {
       return true
     })
   }, [sessions, search, selectedProject, selectedModel, showBookmarked, bookmarks, dateRange, selectedTag, annotations])
+
+  // Persist grouping preference
+  useEffect(() => {
+    localStorage.setItem("deck-sessions-grouping", groupBy)
+  }, [groupBy])
+
+  // Compute groups from filtered sessions
+  const groups = useMemo(
+    () => groupSessions(filtered, groupBy),
+    [filtered, groupBy]
+  )
+
+  const toggleGroupCollapse = useCallback((key: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) {
+        next.delete(key)
+      } else {
+        next.add(key)
+      }
+      return next
+    })
+  }, [])
+
+  const handleGroupByChange = useCallback((value: string) => {
+    setGroupBy(value as GroupByOption)
+    setCollapsedGroups(new Set())
+  }, [])
 
   const handleSelectAll = useCallback(() => {
     setSelectedIds((prev) => {
@@ -559,6 +785,20 @@ function SessionsContent() {
             })}
           </div>
 
+          {/* Group by */}
+          <Select value={groupBy} onValueChange={handleGroupByChange}>
+            <SelectTrigger className="w-[160px] border-zinc-800 bg-zinc-900 text-zinc-300">
+              <Layers className="size-3 mr-1 text-zinc-500" />
+              <SelectValue placeholder="Group by" />
+            </SelectTrigger>
+            <SelectContent className="border-zinc-700 bg-zinc-900">
+              <SelectItem value="none">No Grouping</SelectItem>
+              <SelectItem value="project">By Project</SelectItem>
+              <SelectItem value="date">By Date</SelectItem>
+              <SelectItem value="model">By Model</SelectItem>
+            </SelectContent>
+          </Select>
+
           {/* Count + auto-refresh indicator */}
           <span className="text-xs text-muted-foreground ml-auto flex items-center gap-2">
             Showing {filtered.length} of {sessions.length} sessions
@@ -616,92 +856,66 @@ function SessionsContent() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((session, idx) => (
-                <TableRow
-                  key={session.id}
-                  data-row-index={idx}
-                  className={`cursor-pointer border-zinc-800 transition-colors hover:bg-zinc-800/50 ${
-                    highlightedIndex === idx ? "bg-zinc-800 ring-1 ring-zinc-600" : ""
-                  }`}
-                  onClick={() => router.push(`/sessions/${session.id}`)}
-                >
-                  <TableCell className="px-2">
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.has(session.id)}
-                      onClick={(e) => handleToggleSelect(e, session.id)}
-                      onChange={() => {}} // controlled
-                      className="size-3.5 rounded border-zinc-600 bg-zinc-800 accent-emerald-500 cursor-pointer"
+              {groupBy === "none"
+                ? filtered.map((session, idx) => (
+                    <SessionRow
+                      key={session.id}
+                      session={session}
+                      idx={idx}
+                      highlightedIndex={highlightedIndex}
+                      selectedIds={selectedIds}
+                      bookmarks={bookmarks}
+                      annotations={annotations}
+                      onNavigate={(id) => router.push(`/sessions/${id}`)}
+                      onToggleSelect={handleToggleSelect}
+                      onToggleBookmark={handleToggleBookmark}
                     />
-                  </TableCell>
-                  <TableCell className="px-2">
-                    <button
-                      onClick={(e) => handleToggleBookmark(e, session.id)}
-                      className="p-0.5 hover:scale-110 transition-transform"
-                    >
-                      <Star
-                        className={`size-4 ${
-                          bookmarks.has(session.id)
-                            ? "fill-yellow-500 text-yellow-500"
-                            : "text-zinc-600 hover:text-zinc-400"
-                        }`}
-                      />
-                    </button>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="secondary"
-                      className={
-                        session.source === "codex"
-                          ? "bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px]"
-                          : "bg-zinc-800 text-zinc-400 text-[10px]"
-                      }
-                    >
-                      {session.source === "codex" ? "Codex" : "CC"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="font-medium text-zinc-200">
-                    <span className="flex items-center gap-2">
-                      <span className={`size-2 shrink-0 rounded-full ${getProjectColor(session.projectName).dot}`} />
-                      {session.projectName}
-                    </span>
-                  </TableCell>
-                  <TableCell className="max-w-xs text-zinc-400">
-                    <div className="flex items-center gap-2">
-                      <span className="truncate">{truncate(session.firstPrompt, 60)}</span>
-                      {annotations[session.id]?.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className={`inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-[10px] font-medium border ${getTagClasses(tag)}`}
+                  ))
+                : groups.map((group) => {
+                    const isCollapsed = collapsedGroups.has(group.key)
+                    return (
+                      <Fragment key={group.key}>
+                        <TableRow
+                          className="border-zinc-800 hover:bg-transparent cursor-pointer"
+                          onClick={() => toggleGroupCollapse(group.key)}
                         >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className="border-zinc-700 text-[10px] text-zinc-500"
-                    >
-                      {session.model}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right text-zinc-400">
-                    {session.messageCount}
-                  </TableCell>
-                  <TableCell className="text-right font-mono text-xs text-zinc-500">
-                    {formatTokens(session.totalInputTokens)} /{" "}
-                    {formatTokens(session.totalOutputTokens)}
-                  </TableCell>
-                  <TableCell className="text-right text-zinc-300">
-                    {formatCost(session.estimatedCost)}
-                  </TableCell>
-                  <TableCell className="text-right text-zinc-500">
-                    {formatDate(session.startTime)}
-                  </TableCell>
-                </TableRow>
-              ))}
+                          <TableCell colSpan={10} className="p-0">
+                            <div className="flex items-center gap-3 rounded-md bg-zinc-800/50 px-4 py-2.5 mx-1 my-1">
+                              <ChevronRight
+                                className={`size-4 text-zinc-400 transition-transform duration-200 ${
+                                  isCollapsed ? "" : "rotate-90"
+                                }`}
+                              />
+                              <span className="text-sm font-medium text-zinc-300">
+                                {group.label}
+                              </span>
+                              <span className="text-xs text-zinc-500">
+                                {group.sessions.length} session{group.sessions.length !== 1 ? "s" : ""}
+                              </span>
+                              <span className="text-xs text-zinc-500">
+                                &middot; {formatCost(group.totalCost)}
+                              </span>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                        {!isCollapsed &&
+                          group.sessions.map((session) => (
+                            <SessionRow
+                              key={session.id}
+                              session={session}
+                              idx={-1}
+                              highlightedIndex={highlightedIndex}
+                              selectedIds={selectedIds}
+                              bookmarks={bookmarks}
+                              annotations={annotations}
+                              onNavigate={(id) => router.push(`/sessions/${id}`)}
+                              onToggleSelect={handleToggleSelect}
+                              onToggleBookmark={handleToggleBookmark}
+                            />
+                          ))}
+                      </Fragment>
+                    )
+                  })}
             </TableBody>
           </Table>
         </div>
