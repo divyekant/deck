@@ -13,6 +13,8 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  Search,
+  TrendingUp,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -25,12 +27,14 @@ const navSections = [
     label: "Overview",
     items: [
       { name: "Home", href: "/", icon: BarChart3 },
+      { name: "Search", href: "/search", icon: Search },
     ],
   },
   {
     label: "Monitor",
     items: [
       { name: "Sessions", href: "/sessions", icon: MessageSquare, showRunning: true },
+      { name: "Analytics", href: "/analytics", icon: TrendingUp },
     ],
   },
   {

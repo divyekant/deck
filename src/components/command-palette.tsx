@@ -27,6 +27,7 @@ interface PaletteItem {
 
 const PAGES: PaletteItem[] = [
   { id: "home", label: "Home", section: "Pages", href: "/", icon: Home },
+  { id: "search", label: "Search", section: "Pages", href: "/search", icon: Search },
   { id: "sessions", label: "Sessions", section: "Pages", href: "/sessions", icon: MessageSquare },
   { id: "repos", label: "Repos", section: "Pages", href: "/repos", icon: GitBranch },
   { id: "mcp", label: "MCP Servers", section: "Pages", href: "/mcp", icon: Puzzle },

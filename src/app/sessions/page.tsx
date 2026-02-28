@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Search, Star, Tag } from "lucide-react"
+import { Bookmark, Download, Search, Star, Tag, X } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -119,6 +119,11 @@ function SessionsContent() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [updatedLabel, setUpdatedLabel] = useState("")
 
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const isSelecting = selectedIds.size > 0
+  const [showTagDropdown, setShowTagDropdown] = useState(false)
+
   // Keyboard navigation state
   const [highlightedIndex, setHighlightedIndex] = useState(-1)
   const searchInputRef = useRef<HTMLInputElement>(null)
@@ -199,6 +204,79 @@ function SessionsContent() {
       // Fail silently
     }
   }, [])
+
+  // Bulk selection handlers
+  const handleToggleSelect = useCallback((e: React.MouseEvent, sessionId: string) => {
+    e.stopPropagation()
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(sessionId)) {
+        next.delete(sessionId)
+      } else {
+        next.add(sessionId)
+      }
+      return next
+    })
+  }, [])
+
+  const downloadExport = useCallback(async (format: "csv" | "markdown") => {
+    const res = await fetch("/api/export", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionIds: Array.from(selectedIds), format }),
+    })
+    if (!res.ok) return
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = format === "csv" ? "deck-sessions.csv" : "deck-sessions.md"
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [selectedIds])
+
+  const handleBulkTag = useCallback(async (tag: string) => {
+    setShowTagDropdown(false)
+    const promises = Array.from(selectedIds).map((sessionId) => {
+      const existing = annotations[sessionId]?.tags ?? []
+      if (existing.includes(tag)) return Promise.resolve()
+      return fetch("/api/annotations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId, tags: [...existing, tag] }),
+      })
+    })
+    await Promise.all(promises)
+    // Refresh annotations
+    try {
+      const res = await fetch("/api/annotations")
+      if (res.ok) {
+        const data = await res.json()
+        setAnnotations(data.annotations ?? {})
+        setAllTags(data.allTags ?? [])
+      }
+    } catch { /* fail silently */ }
+  }, [selectedIds, annotations])
+
+  const handleBulkBookmark = useCallback(async () => {
+    const promises = Array.from(selectedIds)
+      .filter((id) => !bookmarks.has(id))
+      .map((sessionId) =>
+        fetch("/api/bookmarks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId }),
+        })
+      )
+    await Promise.all(promises)
+    setBookmarks((prev) => {
+      const next = new Set(prev)
+      for (const id of selectedIds) {
+        next.add(id)
+      }
+      return next
+    })
+  }, [selectedIds, bookmarks])
 
   // Auto-refresh: visibilitychange + 30s polling
   useEffect(() => {
@@ -298,6 +376,15 @@ function SessionsContent() {
       return true
     })
   }, [sessions, search, selectedProject, selectedModel, showBookmarked, bookmarks, dateRange, selectedTag, annotations])
+
+  const handleSelectAll = useCallback(() => {
+    setSelectedIds((prev) => {
+      if (prev.size === filtered.length) {
+        return new Set()
+      }
+      return new Set(filtered.map((s) => s.id))
+    })
+  }, [filtered])
 
   // Reset highlight when filter changes
   useEffect(() => {
@@ -500,6 +587,14 @@ function SessionsContent() {
           <Table>
             <TableHeader>
               <TableRow className="border-zinc-800 hover:bg-transparent">
+                <TableHead className="text-zinc-400 w-[40px] px-2">
+                  <input
+                    type="checkbox"
+                    checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                    onChange={handleSelectAll}
+                    className="size-3.5 rounded border-zinc-600 bg-zinc-800 accent-emerald-500 cursor-pointer"
+                  />
+                </TableHead>
                 <TableHead className="text-zinc-400 w-[40px]"></TableHead>
                 <TableHead className="text-zinc-400 w-[60px]">Source</TableHead>
                 <TableHead className="text-zinc-400">Project</TableHead>
@@ -529,6 +624,15 @@ function SessionsContent() {
                   }`}
                   onClick={() => router.push(`/sessions/${session.id}`)}
                 >
+                  <TableCell className="px-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(session.id)}
+                      onClick={(e) => handleToggleSelect(e, session.id)}
+                      onChange={() => {}} // controlled
+                      className="size-3.5 rounded border-zinc-600 bg-zinc-800 accent-emerald-500 cursor-pointer"
+                    />
+                  </TableCell>
                   <TableCell className="px-2">
                     <button
                       onClick={(e) => handleToggleBookmark(e, session.id)}
@@ -596,6 +700,78 @@ function SessionsContent() {
               ))}
             </TableBody>
           </Table>
+        </div>
+      )}
+
+      {/* Bulk action bar */}
+      {isSelecting && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-700 bg-zinc-900/95 backdrop-blur-sm px-6 py-3">
+          <div className="mx-auto flex items-center gap-4">
+            <span className="text-sm font-medium text-zinc-200">
+              {selectedIds.size} session{selectedIds.size !== 1 ? "s" : ""} selected
+            </span>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => downloadExport("csv")}
+                className="flex items-center gap-1.5 rounded-md bg-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-zinc-100 border border-zinc-700"
+              >
+                <Download className="size-3" />
+                Export CSV
+              </button>
+
+              <button
+                onClick={() => downloadExport("markdown")}
+                className="flex items-center gap-1.5 rounded-md bg-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-zinc-100 border border-zinc-700"
+              >
+                <Download className="size-3" />
+                Export MD
+              </button>
+
+              <div className="relative">
+                <button
+                  onClick={() => setShowTagDropdown((prev) => !prev)}
+                  className="flex items-center gap-1.5 rounded-md bg-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-zinc-100 border border-zinc-700"
+                >
+                  <Tag className="size-3" />
+                  Tag All
+                </button>
+                {showTagDropdown && (
+                  <div className="absolute bottom-full mb-1 left-0 rounded-md border border-zinc-700 bg-zinc-900 p-1 shadow-lg min-w-[140px]">
+                    {Object.keys(TAG_COLORS).map((tag) => (
+                      <button
+                        key={tag}
+                        onClick={() => handleBulkTag(tag)}
+                        className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800"
+                      >
+                        <span
+                          className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium border ${getTagClasses(tag)}`}
+                        >
+                          {tag}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={handleBulkBookmark}
+                className="flex items-center gap-1.5 rounded-md bg-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-zinc-100 border border-zinc-700"
+              >
+                <Bookmark className="size-3" />
+                Bookmark All
+              </button>
+            </div>
+
+            <button
+              onClick={() => setSelectedIds(new Set())}
+              className="ml-auto flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-zinc-500 transition-colors hover:text-zinc-300"
+            >
+              <X className="size-3" />
+              Clear
+            </button>
+          </div>
         </div>
       )}
     </div>
