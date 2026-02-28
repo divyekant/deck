@@ -27,6 +27,8 @@ import {
   FileText,
   Bell,
   LayoutTemplate,
+  Bookmark,
+  Rss,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { VisuallyHidden } from "radix-ui"
@@ -62,6 +64,9 @@ const PAGES: PaletteItem[] = [
   { id: "models", label: "Model Comparison", section: "Pages", href: "/models", icon: Cpu },
   { id: "notifications", label: "Notifications", section: "Pages", href: "/notifications", icon: Bell },
   { id: "templates", label: "Session Templates", section: "Pages", href: "/templates", icon: LayoutTemplate },
+  { id: "activity", label: "Activity Feed", section: "Pages", href: "/activity", icon: Rss },
+  { id: "bookmarks", label: "Bookmarks", section: "Pages", href: "/bookmarks", icon: Bookmark },
+  { id: "git", label: "Git Activity", section: "Pages", href: "/git", icon: GitBranch },
   { id: "mcp", label: "MCP Servers", section: "Pages", href: "/mcp", icon: Puzzle },
   { id: "settings", label: "Settings", section: "Pages", href: "/settings", icon: Settings },
 ]

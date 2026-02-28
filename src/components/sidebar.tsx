@@ -33,6 +33,8 @@ import {
   FileText,
   Bell,
   LayoutTemplate,
+  Bookmark,
+  Rss,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -47,6 +49,8 @@ export const navSections = [
       { name: "Home", href: "/", icon: BarChart3 },
       { name: "Search", href: "/search", icon: Search },
       { name: "Notifications", href: "/notifications", icon: Bell },
+      { name: "Activity", href: "/activity", icon: Rss },
+      { name: "Bookmarks", href: "/bookmarks", icon: Bookmark },
     ],
   },
   {
@@ -74,6 +78,7 @@ export const navSections = [
       { name: "Chains", href: "/chains", icon: Link2 },
       { name: "Health", href: "/health", icon: HeartPulse },
       { name: "Reports", href: "/reports", icon: FileText },
+      { name: "Git", href: "/git", icon: GitBranch },
     ],
   },
   {
