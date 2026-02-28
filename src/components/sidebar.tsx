@@ -20,6 +20,9 @@ import {
   Radio,
   DollarSign,
   FileDiff,
+  Activity,
+  Network,
+  Camera,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -48,8 +51,11 @@ const navSections = [
     label: "Workspace",
     items: [
       { name: "Repos", href: "/repos", icon: GitBranch },
+      { name: "Pulse", href: "/pulse", icon: Activity },
       { name: "Timeline", href: "/timeline", icon: Clock },
       { name: "Diffs", href: "/diffs", icon: FileDiff },
+      { name: "Snapshots", href: "/snapshots", icon: Camera },
+      { name: "Work Graph", href: "/work-graph", icon: Network },
     ],
   },
   {
