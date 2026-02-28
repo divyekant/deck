@@ -25,6 +25,7 @@ import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { MessageView } from "@/components/message-view"
 import { ExportButton } from "@/components/export-button"
+import { ContextWindowChart } from "@/components/context-window-chart"
 import { formatCost, formatTokens } from "@/lib/claude/costs"
 import type { SessionDetail, UserMessage, AssistantMessage, ContentBlock } from "@/lib/claude/types"
 
@@ -91,6 +92,9 @@ export default function SessionDetailPage() {
   // Diffs state
   const [diffs, setDiffs] = useState<{ path: string; action: string; count: number }[]>([])
   const [diffsExpanded, setDiffsExpanded] = useState(false)
+
+  // Context window state
+  const [contextExpanded, setContextExpanded] = useState(false)
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -518,6 +522,24 @@ export default function SessionDetailPage() {
         </div>
 
         <Separator className="bg-zinc-800" />
+
+        {/* Context Window */}
+        {session && (
+          <div className="mb-1">
+            <button
+              onClick={() => setContextExpanded(!contextExpanded)}
+              className="flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-zinc-200 transition-colors"
+            >
+              {contextExpanded ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
+              Context Window
+            </button>
+            {contextExpanded && (
+              <div className="mt-3">
+                <ContextWindowChart messages={session.messages} model={session.meta.model} />
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Annotations: Tags + Note */}
         <div className="space-y-3 py-2">

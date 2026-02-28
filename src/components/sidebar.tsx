@@ -23,6 +23,8 @@ import {
   Activity,
   Network,
   Camera,
+  Plug,
+  Scale,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -56,12 +58,14 @@ const navSections = [
       { name: "Diffs", href: "/diffs", icon: FileDiff },
       { name: "Snapshots", href: "/snapshots", icon: Camera },
       { name: "Work Graph", href: "/work-graph", icon: Network },
+      { name: "Compare", href: "/compare", icon: Scale },
     ],
   },
   {
     label: "Config",
     items: [
       { name: "MCP Servers", href: "/mcp", icon: Puzzle },
+      { name: "Ports", href: "/ports", icon: Plug },
       { name: "Skills", href: "/skills", icon: Sparkles },
     ],
   },
