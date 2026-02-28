@@ -8,7 +8,9 @@ import {
   BarChart3,
   MessageSquare,
   GitBranch,
+  Clock,
   Puzzle,
+  Sparkles,
   Plus,
   Settings,
   ChevronLeft,
@@ -17,6 +19,7 @@ import {
   TrendingUp,
   Radio,
   DollarSign,
+  FileDiff,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -45,12 +48,15 @@ const navSections = [
     label: "Workspace",
     items: [
       { name: "Repos", href: "/repos", icon: GitBranch },
+      { name: "Timeline", href: "/timeline", icon: Clock },
+      { name: "Diffs", href: "/diffs", icon: FileDiff },
     ],
   },
   {
     label: "Config",
     items: [
       { name: "MCP Servers", href: "/mcp", icon: Puzzle },
+      { name: "Skills", href: "/skills", icon: Sparkles },
     ],
   },
 ]

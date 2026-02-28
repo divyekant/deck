@@ -14,6 +14,9 @@ import {
   Send,
   X,
   Check,
+  ChevronDown,
+  ChevronRight,
+  FileCode2,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -85,6 +88,10 @@ export default function SessionDetailPage() {
   const [tagInput, setTagInput] = useState("")
   const [noteSaved, setNoteSaved] = useState(false)
 
+  // Diffs state
+  const [diffs, setDiffs] = useState<{ path: string; action: string; count: number }[]>([])
+  const [diffsExpanded, setDiffsExpanded] = useState(false)
+
   const scrollRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const abortRef = useRef<AbortController | null>(null)
@@ -124,6 +131,24 @@ export default function SessionDetailPage() {
       }
     }
     fetchAnnotation()
+  }, [id])
+
+  // Fetch diffs on mount
+  useEffect(() => {
+    if (!id) return
+    async function fetchDiffs() {
+      try {
+        const res = await fetch(`/api/sessions/${id}/diffs`)
+        if (!res.ok) return
+        const data = await res.json()
+        if (Array.isArray(data.files)) {
+          setDiffs(data.files)
+        }
+      } catch {
+        // Non-critical, fail silently
+      }
+    }
+    fetchDiffs()
   }, [id])
 
   // Save tags to API
@@ -554,6 +579,56 @@ export default function SessionDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Files Changed */}
+      {diffs.length > 0 && (
+        <div className="shrink-0 mt-2">
+          <button
+            onClick={() => setDiffsExpanded((v) => !v)}
+            className="flex w-full items-center gap-2 rounded-md px-1 py-1.5 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
+          >
+            {diffsExpanded ? (
+              <ChevronDown className="size-3.5" />
+            ) : (
+              <ChevronRight className="size-3.5" />
+            )}
+            <FileCode2 className="size-3.5" />
+            <span className="font-medium text-zinc-300">Files Changed</span>
+            <Badge variant="secondary" className="bg-zinc-800 text-zinc-400 text-[10px]">
+              {diffs.length}
+            </Badge>
+          </button>
+          {diffsExpanded && (
+            <div className="mt-1 space-y-0.5 pl-6">
+              {diffs.map((file) => (
+                <div
+                  key={file.path}
+                  className="flex items-center gap-2 rounded px-2 py-1 text-xs"
+                >
+                  <Badge
+                    variant="outline"
+                    className={`shrink-0 text-[10px] ${
+                      file.action === "created"
+                        ? "bg-emerald-950 text-emerald-400 border-emerald-800"
+                        : file.action === "edited"
+                          ? "bg-blue-950 text-blue-400 border-blue-800"
+                          : "bg-zinc-800 text-zinc-400 border-zinc-700"
+                    }`}
+                  >
+                    {file.action}
+                  </Badge>
+                  <span className="truncate font-mono text-zinc-400" title={file.path}>
+                    {file.path.split("/").slice(-2).join("/")}
+                  </span>
+                  {file.count > 1 && (
+                    <span className="shrink-0 text-zinc-600">x{file.count}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Conversation */}
       <ScrollArea className="flex-1 mt-4">

@@ -6,6 +6,7 @@ import {
   Home,
   MessageSquare,
   GitBranch,
+  Clock,
   Puzzle,
   Settings,
   Plus,
@@ -34,6 +35,7 @@ const PAGES: PaletteItem[] = [
   { id: "sessions", label: "Sessions", section: "Pages", href: "/sessions", icon: MessageSquare },
   { id: "costs", label: "Costs", section: "Pages", href: "/costs", icon: DollarSign },
   { id: "repos", label: "Repos", section: "Pages", href: "/repos", icon: GitBranch },
+  { id: "timeline", label: "Timeline", section: "Pages", href: "/timeline", icon: Clock },
   { id: "mcp", label: "MCP Servers", section: "Pages", href: "/mcp", icon: Puzzle },
   { id: "settings", label: "Settings", section: "Pages", href: "/settings", icon: Settings },
 ]
