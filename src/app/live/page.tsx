@@ -21,9 +21,9 @@ function extractProjectName(projectDir: string): string {
 
 function formatElapsed(startedAt: string): string {
   const start = new Date(startedAt).getTime()
-  if (isNaN(start)) return "Running..."
+  if (isNaN(start)) return "Active"
   const elapsed = Date.now() - start
-  if (elapsed < 0) return "Running..."
+  if (elapsed < 0 || elapsed > 86_400_000) return "Active" // >24h = likely stale
   const seconds = Math.floor(elapsed / 1000)
   const minutes = Math.floor(seconds / 60)
   const hours = Math.floor(minutes / 60)

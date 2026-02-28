@@ -127,9 +127,9 @@ async function detectRecentlyActiveSessions(): Promise<RunningSessionEntry[]> {
         // If we can't parse, still include with minimal info
       }
 
-      // Fallback startedAt to file birthtime
+      // Fallback startedAt to file mtime (birthtime is unreliable in Docker)
       if (!startedAt) {
-        startedAt = stat.birthtime.toISOString();
+        startedAt = stat.mtime.toISOString();
       }
 
       results.push({
