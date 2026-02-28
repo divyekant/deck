@@ -64,6 +64,7 @@ export default function NewSessionPage() {
   // Form state
   const [projects, setProjects] = useState<{ path: string; name: string }[]>([])
   const [projectDir, setProjectDir] = useState("")
+  const [cli, setCli] = useState<"claude" | "codex">("claude")
   const [model, setModel] = useState("sonnet")
   const [prompt, setPrompt] = useState("")
   const [launching, setLaunching] = useState(false)
@@ -143,7 +144,7 @@ export default function NewSessionPage() {
       const res = await fetch("/api/sessions/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectDir, model, prompt: prompt.trim() }),
+        body: JSON.stringify({ projectDir, model, prompt: prompt.trim(), cli }),
       })
 
       if (!res.ok) {
@@ -243,7 +244,7 @@ export default function NewSessionPage() {
       setLaunching(false)
       setStreaming(false)
     }
-  }, [prompt, projectDir, model, done])
+  }, [prompt, projectDir, model, cli, done])
 
   const handleStop = useCallback(async () => {
     if (!sessionId) return
@@ -362,6 +363,27 @@ export default function NewSessionPage() {
                 {projectDir && (
                   <p className="font-mono text-[10px] text-zinc-600 truncate">{projectDir}</p>
                 )}
+              </div>
+
+              {/* CLI selector */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-zinc-400">CLI</label>
+                <div className="flex gap-2">
+                  {(["claude", "codex"] as const).map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => setCli(c)}
+                      disabled={isActive}
+                      className={`flex-1 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 ${
+                        cli === c
+                          ? "border-zinc-500 bg-zinc-800 text-zinc-100"
+                          : "border-zinc-800 bg-zinc-950 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300"
+                      }`}
+                    >
+                      {c === "claude" ? "Claude Code" : "Codex"}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Model selector */}

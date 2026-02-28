@@ -347,7 +347,7 @@ function ActivityContent() {
                 <button
                   key={`${event.sessionId}-${event.type}-${idx}`}
                   onClick={() => router.push(`/sessions/${event.sessionId}`)}
-                  className="group relative flex w-full items-start gap-4 rounded-lg px-2 py-3 text-left transition-colors hover:bg-zinc-900"
+                  className="group relative flex w-full items-center gap-4 rounded-lg px-2 py-3 text-left transition-colors hover:bg-zinc-900"
                 >
                   {/* Icon */}
                   <div

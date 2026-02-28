@@ -1,6 +1,11 @@
 import { spawn, ChildProcess } from "child_process";
 import { randomUUID } from "crypto";
 
+export type CliTool = "claude" | "codex";
+
+const CLI_PATH =
+  "/Users/divyekant/.nvm/versions/node/v24.12.0/bin:/Users/divyekant/.orbstack/bin:/Users/divyekant/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin";
+
 interface RunningSession {
   id: string;
   process: ChildProcess;
@@ -22,16 +27,18 @@ function spawnClaudeProcess(opts: {
   id: string;
   args: string[];
   cwd?: string;
-  prompt: string;
+  prompt?: string;
   projectDir?: string;
   model?: string;
+  cli?: CliTool;
 }): { error?: string } {
+  const binary = opts.cli === "codex" ? "codex" : "claude";
   let proc: ChildProcess;
   try {
-    proc = spawn("claude", opts.args, {
+    proc = spawn(binary, opts.args, {
       cwd: opts.cwd || undefined,
       stdio: ["pipe", "pipe", "pipe"],
-      env: { ...process.env },
+      env: { ...process.env, PATH: CLI_PATH },
     });
   } catch (err) {
     return {
@@ -44,7 +51,7 @@ function spawnClaudeProcess(opts: {
     process: proc,
     projectDir: opts.projectDir || "",
     model: opts.model || "",
-    prompt: opts.prompt,
+    prompt: opts.prompt || "",
     startedAt: new Date(),
     output: [],
     exitCode: null,
@@ -55,9 +62,11 @@ function spawnClaudeProcess(opts: {
 
   runningSessions.set(opts.id, session);
 
-  // Write prompt to stdin and close it
-  if (proc.stdin) {
+  // Write prompt to stdin and close it (only for claude, not codex)
+  if (proc.stdin && opts.prompt) {
     proc.stdin.write(opts.prompt);
+    proc.stdin.end();
+  } else if (proc.stdin) {
     proc.stdin.end();
   }
 
@@ -141,26 +150,42 @@ export function startSession(opts: {
   projectDir: string;
   model: string;
   prompt: string;
+  cli?: CliTool;
 }): { id: string; error?: string } {
   const id = randomUUID();
+  const cli = opts.cli || "claude";
 
-  const args = [
-    "-p",
-    "--output-format=stream-json",
-    "--include-partial-messages",
-    "--model",
-    opts.model,
-    "--session-id",
-    id,
-  ];
+  let args: string[];
+
+  if (cli === "codex") {
+    // Codex CLI uses different flags
+    args = [
+      "--approval-policy",
+      "on-failure",
+      "--model",
+      opts.model,
+      opts.prompt,
+    ];
+  } else {
+    args = [
+      "-p",
+      "--output-format=stream-json",
+      "--include-partial-messages",
+      "--model",
+      opts.model,
+      "--session-id",
+      id,
+    ];
+  }
 
   const result = spawnClaudeProcess({
     id,
     args,
     cwd: opts.projectDir,
-    prompt: opts.prompt,
+    prompt: cli === "claude" ? opts.prompt : undefined,
     projectDir: opts.projectDir,
     model: opts.model,
+    cli,
   });
 
   if (result.error) {

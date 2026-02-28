@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { access } from "fs/promises";
-import { startSession } from "@/lib/claude/process";
+import { startSession, type CliTool } from "@/lib/claude/process";
 import { MODEL_PRICING } from "@/lib/claude/costs";
 
 const ALLOWED_MODELS = [
@@ -10,10 +10,13 @@ const ALLOWED_MODELS = [
   ...Object.keys(MODEL_PRICING),
 ];
 
+const ALLOWED_CLIS: CliTool[] = ["claude", "codex"];
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { projectDir, model, prompt } = body;
+    const { projectDir, model, prompt, cli: rawCli } = body;
+    const cli: CliTool = ALLOWED_CLIS.includes(rawCli) ? rawCli : "claude";
 
     // Validate projectDir
     if (!projectDir || typeof projectDir !== "string" || !projectDir.trim()) {
@@ -59,6 +62,7 @@ export async function POST(request: Request) {
       projectDir: projectDir.trim(),
       model: model.trim(),
       prompt: prompt.trim(),
+      cli,
     });
 
     if (result.error) {

@@ -172,7 +172,7 @@ export function DailyDigest({ sessions }: DailyDigestProps) {
               <span className="text-zinc-200 font-medium">{topProject}</span>
             </>
           )}
-          . Cache efficiency was{" "}
+          . Cache hit rate was{" "}
           <span className="text-zinc-200 font-medium">
             {cacheHitRate.toFixed(0)}%
           </span>

@@ -10,6 +10,7 @@ interface RunningSession {
   model: string
   prompt: string
   startedAt: string
+  source?: "deck" | "heuristic"
 }
 
 function extractProjectName(projectDir: string): string {
@@ -128,12 +129,18 @@ export default function LivePage() {
               href={`/sessions/${session.id}`}
               className="group block rounded-lg border border-zinc-800 bg-zinc-900 p-5 transition-colors hover:border-zinc-700 hover:bg-zinc-800/50"
             >
-              {/* Top row: pulsing dot + Live badge + elapsed */}
+              {/* Top row: pulsing dot + Live/Active badge + elapsed */}
               <div className="mb-3 flex items-center gap-2">
                 <PulsingDot />
-                <span className="rounded-full bg-emerald-900/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-400">
-                  Live
-                </span>
+                {session.source === "heuristic" ? (
+                  <span className="rounded-full bg-blue-900/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-400">
+                    Recently Active
+                  </span>
+                ) : (
+                  <span className="rounded-full bg-emerald-900/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-400">
+                    Live
+                  </span>
+                )}
                 <span className="ml-auto text-xs tabular-nums text-zinc-500">
                   {formatElapsed(session.startedAt)}
                 </span>

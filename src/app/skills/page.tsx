@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { Sparkles, FileText, ChevronDown, ChevronRight } from "lucide-react"
+import { Sparkles, FileText, ChevronDown, ChevronRight, Puzzle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
@@ -25,9 +25,18 @@ interface ClaudeMdEntry {
   truncated: boolean
 }
 
+interface SkillEntry {
+  name: string
+  source: "user" | "plugin"
+  pluginName?: string
+  description?: string
+  files: string[]
+}
+
 interface SkillsData {
   commands: CommandEntry[]
   claudeMdFiles: ClaudeMdEntry[]
+  skills: SkillEntry[]
 }
 
 function CommandCard({ command }: { command: CommandEntry }) {
@@ -132,6 +141,46 @@ function ClaudeMdCard({ file }: { file: ClaudeMdEntry }) {
   )
 }
 
+function SkillCard({ skill }: { skill: SkillEntry }) {
+  return (
+    <Card className="border-zinc-800 bg-zinc-900">
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Puzzle className="size-4 shrink-0 text-violet-400" />
+          <CardTitle className="text-base text-zinc-100">
+            {skill.name}
+          </CardTitle>
+          <Badge
+            variant="secondary"
+            className={
+              skill.source === "user"
+                ? "bg-emerald-900/60 text-emerald-400"
+                : "bg-violet-900/60 text-violet-400"
+            }
+          >
+            {skill.source === "user" ? "user" : skill.pluginName || "plugin"}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {skill.description && (
+          <p className="text-sm text-zinc-400">{skill.description}</p>
+        )}
+        <div className="flex flex-wrap gap-1.5">
+          {skill.files.map((file) => (
+            <span
+              key={file}
+              className="inline-flex items-center rounded-md bg-zinc-800 px-2 py-0.5 font-mono text-[11px] text-zinc-400"
+            >
+              {file}
+            </span>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
@@ -196,6 +245,7 @@ export default function SkillsPage() {
 
   const commandCount = data?.commands.length ?? 0
   const claudeMdCount = data?.claudeMdFiles.length ?? 0
+  const skillCount = data?.skills?.length ?? 0
 
   return (
     <div className="space-y-6">
@@ -208,7 +258,7 @@ export default function SkillsPage() {
         <Badge variant="secondary" className="bg-zinc-800 text-zinc-400">
           {loading
             ? "..."
-            : `${commandCount} command${commandCount !== 1 ? "s" : ""}, ${claudeMdCount} instruction${claudeMdCount !== 1 ? "s" : ""}`}
+            : `${commandCount} command${commandCount !== 1 ? "s" : ""}, ${claudeMdCount} instruction${claudeMdCount !== 1 ? "s" : ""}${skillCount > 0 ? `, ${skillCount} skill${skillCount !== 1 ? "s" : ""}` : ""}`}
         </Badge>
       </div>
 
@@ -242,6 +292,14 @@ export default function SkillsPage() {
               {commandCount > 0 && (
                 <span className="ml-1.5 text-xs text-zinc-500">
                   {commandCount}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="skills">
+              Skills
+              {skillCount > 0 && (
+                <span className="ml-1.5 text-xs text-zinc-500">
+                  {skillCount}
                 </span>
               )}
             </TabsTrigger>
@@ -295,6 +353,56 @@ export default function SkillsPage() {
                     </div>
                   )
                 })}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="skills" className="mt-4">
+            {skillCount === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <Puzzle className="mb-4 size-12 text-zinc-800" />
+                <p className="text-sm text-zinc-500">
+                  No skills found.
+                </p>
+                <p className="mt-1 text-xs text-zinc-600">
+                  Add skill directories to ~/.claude/skills/ or install plugins.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* User skills first */}
+                {data.skills.filter((s) => s.source === "user").length > 0 && (
+                  <div>
+                    <h2 className="mb-3 flex items-center gap-2 text-sm font-medium text-zinc-400">
+                      User Skills
+                    </h2>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {data.skills
+                        .filter((s) => s.source === "user")
+                        .map((skill) => (
+                          <SkillCard key={`user-${skill.name}`} skill={skill} />
+                        ))}
+                    </div>
+                  </div>
+                )}
+                {/* Plugin skills */}
+                {data.skills.filter((s) => s.source === "plugin").length > 0 && (
+                  <div>
+                    <h2 className="mb-3 flex items-center gap-2 text-sm font-medium text-zinc-400">
+                      Plugin Skills
+                    </h2>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {data.skills
+                        .filter((s) => s.source === "plugin")
+                        .map((skill) => (
+                          <SkillCard
+                            key={`plugin-${skill.pluginName}-${skill.name}`}
+                            skill={skill}
+                          />
+                        ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </TabsContent>
