@@ -35,6 +35,7 @@ import {
   LayoutTemplate,
   Bookmark,
   Rss,
+  Download,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -88,6 +89,7 @@ export const navSections = [
       { name: "Ports", href: "/ports", icon: Plug },
       { name: "Skills", href: "/skills", icon: Sparkles },
       { name: "Templates", href: "/templates", icon: LayoutTemplate },
+      { name: "Export", href: "/export", icon: Download },
     ],
   },
 ]
