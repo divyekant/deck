@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Search, Star } from "lucide-react"
+import { Search, Star, Tag } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -50,6 +50,24 @@ function formatDate(dateStr: string): string {
 
 const ALL_PROJECTS = "__all__"
 const ALL_MODELS = "__all__"
+const ALL_TAGS = "__all__"
+
+const TAG_COLORS: Record<string, string> = {
+  "bug-fix": "bg-red-950 text-red-400 border-red-800",
+  feature: "bg-blue-950 text-blue-400 border-blue-800",
+  refactor: "bg-purple-950 text-purple-400 border-purple-800",
+  exploration: "bg-amber-950 text-amber-400 border-amber-800",
+  review: "bg-emerald-950 text-emerald-400 border-emerald-800",
+}
+
+function getTagClasses(tag: string): string {
+  return TAG_COLORS[tag] ?? "bg-zinc-800 text-zinc-400 border-zinc-700"
+}
+
+interface SessionAnnotation {
+  tags: string[]
+  note: string
+}
 
 export default function SessionsPage() {
   return (
@@ -87,6 +105,11 @@ function SessionsContent() {
   // Bookmark state
   const [bookmarks, setBookmarks] = useState<Set<string>>(new Set())
   const [showBookmarked, setShowBookmarked] = useState(false)
+
+  // Annotation state
+  const [annotations, setAnnotations] = useState<Record<string, SessionAnnotation>>({})
+  const [allTags, setAllTags] = useState<string[]>([])
+  const [selectedTag, setSelectedTag] = useState(ALL_TAGS)
 
   // Date range filter
   type DatePreset = "today" | "7d" | "30d" | "all"
@@ -134,6 +157,22 @@ function SessionsContent() {
       }
     }
     fetchBookmarks()
+  }, [])
+
+  // Fetch annotations on mount
+  useEffect(() => {
+    async function fetchAnnotations() {
+      try {
+        const res = await fetch("/api/annotations")
+        if (!res.ok) return
+        const data = await res.json()
+        setAnnotations(data.annotations ?? {})
+        setAllTags(data.allTags ?? [])
+      } catch {
+        // Annotations are non-critical, fail silently
+      }
+    }
+    fetchAnnotations()
   }, [])
 
   // Toggle bookmark handler
@@ -252,14 +291,18 @@ function SessionsContent() {
       if (lowerSearch && !s.firstPrompt.toLowerCase().includes(lowerSearch)) return false
       if (showBookmarked && !bookmarks.has(s.id)) return false
       if (dateThreshold !== null && new Date(s.startTime).getTime() < dateThreshold) return false
+      if (selectedTag !== ALL_TAGS) {
+        const sessionAnnotation = annotations[s.id]
+        if (!sessionAnnotation || !sessionAnnotation.tags.includes(selectedTag)) return false
+      }
       return true
     })
-  }, [sessions, search, selectedProject, selectedModel, showBookmarked, bookmarks, dateRange])
+  }, [sessions, search, selectedProject, selectedModel, showBookmarked, bookmarks, dateRange, selectedTag, annotations])
 
   // Reset highlight when filter changes
   useEffect(() => {
     setHighlightedIndex(-1)
-  }, [search, selectedProject, selectedModel, showBookmarked, dateRange])
+  }, [search, selectedProject, selectedModel, showBookmarked, dateRange, selectedTag])
 
   // Keyboard shortcuts: j/k/Enter/Escape/slash
   useEffect(() => {
@@ -390,6 +433,24 @@ function SessionsContent() {
             Bookmarked
           </button>
 
+          {/* Tag filter */}
+          {allTags.length > 0 && (
+            <Select value={selectedTag} onValueChange={setSelectedTag}>
+              <SelectTrigger className="w-[160px] border-zinc-800 bg-zinc-900 text-zinc-300">
+                <Tag className="size-3 mr-1 text-zinc-500" />
+                <SelectValue placeholder="All Tags" />
+              </SelectTrigger>
+              <SelectContent className="border-zinc-700 bg-zinc-900">
+                <SelectItem value={ALL_TAGS}>All Tags</SelectItem>
+                {allTags.map((tag) => (
+                  <SelectItem key={tag} value={tag}>
+                    {tag}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
           {/* Date range filter */}
           <div className="flex items-center gap-1">
             {(["Today", "7d", "30d", "All"] as const).map((label) => {
@@ -498,7 +559,17 @@ function SessionsContent() {
                     {session.projectName}
                   </TableCell>
                   <TableCell className="max-w-xs text-zinc-400">
-                    {truncate(session.firstPrompt, 60)}
+                    <div className="flex items-center gap-2">
+                      <span className="truncate">{truncate(session.firstPrompt, 60)}</span>
+                      {annotations[session.id]?.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className={`inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-[10px] font-medium border ${getTagClasses(tag)}`}
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Badge

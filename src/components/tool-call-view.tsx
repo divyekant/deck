@@ -7,11 +7,11 @@ import { Terminal, ChevronRight } from "lucide-react"
 
 interface ToolCallViewProps {
   name: string
-  input: Record<string, any>
+  input: Record<string, unknown>
   result?: string
 }
 
-function truncateJson(obj: Record<string, any>, max: number): string {
+function truncateJson(obj: Record<string, unknown>, max: number): string {
   const str = JSON.stringify(obj, null, 2)
   if (str.length <= max) return str
   return str.slice(0, max) + "\n..."

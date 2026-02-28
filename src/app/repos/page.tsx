@@ -153,7 +153,7 @@ export default function ReposPage() {
             <Card
               key={repo.projectName}
               className="cursor-pointer border-zinc-800 bg-zinc-900 transition-colors hover:border-zinc-700 hover:bg-zinc-800/80"
-              onClick={() => router.push(`/sessions?project=${encodeURIComponent(repo.projectName)}`)}
+              onClick={() => router.push(`/repos/${encodeURIComponent(repo.projectName)}`)}
             >
               <CardContent className="pt-0">
                 <div className="flex items-start gap-2">
