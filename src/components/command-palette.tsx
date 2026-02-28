@@ -30,6 +30,9 @@ import {
   Bookmark,
   Rss,
   Download,
+  Lightbulb,
+  Eye,
+  Terminal,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { VisuallyHidden } from "radix-ui"
@@ -69,6 +72,9 @@ const PAGES: PaletteItem[] = [
   { id: "bookmarks", label: "Bookmarks", section: "Pages", href: "/bookmarks", icon: Bookmark },
   { id: "git", label: "Git Activity", section: "Pages", href: "/git", icon: GitBranch },
   { id: "export", label: "Data Export", section: "Pages", href: "/export", icon: Download },
+  { id: "insights", label: "Insights", section: "Pages", href: "/insights", icon: Lightbulb },
+  { id: "focus", label: "Focus Mode", section: "Pages", href: "/focus", icon: Eye },
+  { id: "commands", label: "Command History", section: "Pages", href: "/commands", icon: Terminal },
   { id: "mcp", label: "MCP Servers", section: "Pages", href: "/mcp", icon: Puzzle },
   { id: "settings", label: "Settings", section: "Pages", href: "/settings", icon: Settings },
 ]

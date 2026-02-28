@@ -36,6 +36,9 @@ import {
   Bookmark,
   Rss,
   Download,
+  Lightbulb,
+  Eye,
+  Terminal,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -63,6 +66,8 @@ export const navSections = [
       { name: "Analytics", href: "/analytics", icon: TrendingUp },
       { name: "Tokens", href: "/tokens", icon: Coins },
       { name: "Models", href: "/models", icon: Cpu },
+      { name: "Insights", href: "/insights", icon: Lightbulb },
+      { name: "Commands", href: "/commands", icon: Terminal },
     ],
   },
   {
@@ -90,6 +95,7 @@ export const navSections = [
       { name: "Skills", href: "/skills", icon: Sparkles },
       { name: "Templates", href: "/templates", icon: LayoutTemplate },
       { name: "Export", href: "/export", icon: Download },
+      { name: "Focus", href: "/focus", icon: Eye },
     ],
   },
 ]
