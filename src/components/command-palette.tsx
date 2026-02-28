@@ -23,6 +23,8 @@ import {
   BookOpen,
   Link2,
   Cpu,
+  HeartPulse,
+  FileText,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { VisuallyHidden } from "radix-ui"
@@ -53,6 +55,8 @@ const PAGES: PaletteItem[] = [
   { id: "compare", label: "Compare Sessions", section: "Pages", href: "/compare", icon: Scale },
   { id: "prompts", label: "Prompt Library", section: "Pages", href: "/prompts", icon: BookOpen },
   { id: "chains", label: "Session Chains", section: "Pages", href: "/chains", icon: Link2 },
+  { id: "health", label: "Project Health", section: "Pages", href: "/health", icon: HeartPulse },
+  { id: "reports", label: "Reports", section: "Pages", href: "/reports", icon: FileText },
   { id: "models", label: "Model Comparison", section: "Pages", href: "/models", icon: Cpu },
   { id: "mcp", label: "MCP Servers", section: "Pages", href: "/mcp", icon: Puzzle },
   { id: "settings", label: "Settings", section: "Pages", href: "/settings", icon: Settings },

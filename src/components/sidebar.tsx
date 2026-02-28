@@ -29,6 +29,8 @@ import {
   BookOpen,
   Link2,
   Cpu,
+  HeartPulse,
+  FileText,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -67,6 +69,8 @@ export const navSections = [
       { name: "Compare", href: "/compare", icon: Scale },
       { name: "Prompts", href: "/prompts", icon: BookOpen },
       { name: "Chains", href: "/chains", icon: Link2 },
+      { name: "Health", href: "/health", icon: HeartPulse },
+      { name: "Reports", href: "/reports", icon: FileText },
     ],
   },
   {

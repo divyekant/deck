@@ -11,6 +11,7 @@ import { WorkHoursChart } from "@/components/work-hours-chart"
 import { BudgetWidget } from "@/components/budget-widget"
 import { StreakWidget } from "@/components/streak-widget"
 import { HighlightsWidget } from "@/components/highlights-widget"
+import { FavoritesBar } from "@/components/favorites-bar"
 import { getOverviewStats, getWorkHoursData, getCostTrend, getPeriodCost, getProjectDirs, listSessions } from "@/lib/claude/sessions"
 import { formatCost } from "@/lib/claude/costs"
 import { getSettings } from "@/lib/settings"
@@ -94,6 +95,9 @@ export default async function Home() {
           {" "}Total spend: <span className="text-zinc-300 font-medium">{formatCost(stats.totalCost)}</span>.
         </p>
       </div>
+
+      {/* Favorites */}
+      <FavoritesBar />
 
       {/* Stats Row */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
