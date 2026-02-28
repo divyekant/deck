@@ -25,6 +25,7 @@ import {
   Camera,
   Plug,
   Scale,
+  Coins,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -47,6 +48,7 @@ const navSections = [
       { name: "Sessions", href: "/sessions", icon: MessageSquare },
       { name: "Costs", href: "/costs", icon: DollarSign },
       { name: "Analytics", href: "/analytics", icon: TrendingUp },
+      { name: "Tokens", href: "/tokens", icon: Coins },
     ],
   },
   {

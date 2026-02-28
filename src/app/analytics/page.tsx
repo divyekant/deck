@@ -18,6 +18,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatCost, formatTokens } from "@/lib/claude/costs"
+import SessionHeatmap from "@/components/session-heatmap"
 
 // ---- Types ----
 
@@ -639,6 +640,7 @@ export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [heatmapSessions, setHeatmapSessions] = useState<{ startTime: string }[]>([])
 
   useEffect(() => {
     let active = true
@@ -661,7 +663,25 @@ export default function AnalyticsPage() {
       }
     }
 
+    async function fetchHeatmapSessions() {
+      try {
+        const res = await fetch("/api/sessions?limit=2000")
+        if (!res.ok) return
+        const json = await res.json()
+        if (active) {
+          setHeatmapSessions(
+            json.sessions.map((s: Record<string, unknown>) => ({
+              startTime: s.startTime as string,
+            }))
+          )
+        }
+      } catch {
+        // ignore
+      }
+    }
+
     fetchAnalytics()
+    fetchHeatmapSessions()
     return () => {
       active = false
     }
@@ -705,6 +725,18 @@ export default function AnalyticsPage() {
       <h1 className="text-2xl font-bold tracking-tight text-zinc-100">
         Analytics
       </h1>
+
+      {/* Activity Heatmap */}
+      {heatmapSessions.length > 0 && (
+        <Card className="border-zinc-800 bg-zinc-900">
+          <CardHeader>
+            <CardTitle className="text-zinc-100">Activity Heatmap</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <SessionHeatmap sessions={heatmapSessions} />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Weekly Cost Chart */}
       <Card className="border-zinc-800 bg-zinc-900">

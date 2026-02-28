@@ -19,6 +19,7 @@ import {
   Camera,
   Plug,
   Scale,
+  Coins,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { VisuallyHidden } from "radix-ui"
@@ -44,6 +45,7 @@ const PAGES: PaletteItem[] = [
   { id: "pulse", label: "Repo Pulse", section: "Pages", href: "/pulse", icon: Activity },
   { id: "snapshots", label: "Snapshots", section: "Pages", href: "/snapshots", icon: Camera },
   { id: "work-graph", label: "Work Graph", section: "Pages", href: "/work-graph", icon: Network },
+  { id: "tokens", label: "Token Analytics", section: "Pages", href: "/tokens", icon: Coins },
   { id: "ports", label: "Ports", section: "Pages", href: "/ports", icon: Plug },
   { id: "compare", label: "Compare Sessions", section: "Pages", href: "/compare", icon: Scale },
   { id: "mcp", label: "MCP Servers", section: "Pages", href: "/mcp", icon: Puzzle },

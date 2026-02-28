@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo, useCallback } from "react"
 import Link from "next/link"
 import { formatCost } from "@/lib/claude/costs"
+import CostTips from "@/components/cost-tips"
 
 type Range = "thisMonth" | "lastMonth" | "90d" | "all"
 
@@ -299,10 +300,21 @@ function HorizontalBarChart({
 
 // ---- Main Page ----
 
+interface TipSession {
+  model: string
+  messageCount: number
+  estimatedCost: number
+  startTime: string
+  projectName: string
+  cacheReadTokens: number
+  totalInputTokens: number
+}
+
 export default function CostsPage() {
   const [range, setRange] = useState<Range>("thisMonth")
   const [data, setData] = useState<CostsData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [tipSessions, setTipSessions] = useState<TipSession[]>([])
 
   const fetchCosts = useCallback(async (r: Range) => {
     setLoading(true)
@@ -321,6 +333,31 @@ export default function CostsPage() {
   useEffect(() => {
     fetchCosts(range)
   }, [range, fetchCosts])
+
+  // Fetch session data for cost tips
+  useEffect(() => {
+    async function fetchSessions() {
+      try {
+        const res = await fetch("/api/sessions?limit=500")
+        if (!res.ok) return
+        const json = await res.json()
+        setTipSessions(
+          json.sessions.map((s: Record<string, unknown>) => ({
+            model: s.model as string,
+            messageCount: s.messageCount as number,
+            estimatedCost: s.estimatedCost as number,
+            startTime: s.startTime as string,
+            projectName: s.projectName as string,
+            cacheReadTokens: s.cacheReadTokens as number,
+            totalInputTokens: s.totalInputTokens as number,
+          }))
+        )
+      } catch {
+        // ignore
+      }
+    }
+    fetchSessions()
+  }, [])
 
   return (
     <div className="space-y-8">
@@ -480,6 +517,9 @@ export default function CostsPage() {
               </div>
             )}
           </div>
+
+          {/* Optimization Insights */}
+          {tipSessions.length > 0 && <CostTips sessions={tipSessions} />}
         </>
       ) : (
         <div className="py-16 text-center text-sm text-zinc-500">

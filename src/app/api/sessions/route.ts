@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
-    const limit = Math.max(1, Math.min(200, parseInt(searchParams.get("limit") || "50", 10) || 50));
+    const limit = Math.max(1, Math.min(2000, parseInt(searchParams.get("limit") || "50", 10) || 50));
 
     const allSessions = await listSessions();
     const total = allSessions.length;
