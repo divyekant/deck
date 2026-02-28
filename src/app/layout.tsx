@@ -6,6 +6,7 @@ import { MobileNav } from "@/components/mobile-nav";
 import { ThemeProvider } from "@/components/theme-provider";
 import { CommandPalette } from "@/components/command-palette";
 import { KeyboardNav } from "@/components/keyboard-nav";
+import StatusBar from "@/components/status-bar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -46,6 +47,7 @@ export default function RootLayout({
               {children}
             </main>
           </div>
+          <StatusBar />
           <MobileNav />
           <CommandPalette />
           <KeyboardNav />

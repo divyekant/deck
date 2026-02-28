@@ -39,6 +39,7 @@ import {
   Lightbulb,
   Eye,
   Terminal,
+  Info,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -96,6 +97,7 @@ export const navSections = [
       { name: "Templates", href: "/templates", icon: LayoutTemplate },
       { name: "Export", href: "/export", icon: Download },
       { name: "Focus", href: "/focus", icon: Eye },
+      { name: "About", href: "/about", icon: Info },
     ],
   },
 ]

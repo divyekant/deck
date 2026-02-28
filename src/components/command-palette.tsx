@@ -33,6 +33,7 @@ import {
   Lightbulb,
   Eye,
   Terminal,
+  Info,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { VisuallyHidden } from "radix-ui"
@@ -75,6 +76,7 @@ const PAGES: PaletteItem[] = [
   { id: "insights", label: "Insights", section: "Pages", href: "/insights", icon: Lightbulb },
   { id: "focus", label: "Focus Mode", section: "Pages", href: "/focus", icon: Eye },
   { id: "commands", label: "Command History", section: "Pages", href: "/commands", icon: Terminal },
+  { id: "about", label: "About Deck", section: "Pages", href: "/about", icon: Info },
   { id: "mcp", label: "MCP Servers", section: "Pages", href: "/mcp", icon: Puzzle },
   { id: "settings", label: "Settings", section: "Pages", href: "/settings", icon: Settings },
 ]
