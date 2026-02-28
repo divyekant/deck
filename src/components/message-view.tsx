@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { ToolCallView } from "@/components/tool-call-view"
 import { cn } from "@/lib/utils"
-import { ChevronRight, User, Bot } from "lucide-react"
+import { ChevronRight, User, Bot, Copy, Check } from "lucide-react"
 import type { ContentBlock } from "@/lib/claude/types"
 
 interface MessageViewProps {
@@ -13,6 +13,28 @@ interface MessageViewProps {
   model?: string
   timestamp?: string
   usage?: { input_tokens: number; output_tokens: number }
+  index?: number
+  total?: number
+}
+
+function relativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return "just now"
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  const days = Math.floor(hrs / 24)
+  return `${days}d ago`
+}
+
+function extractText(content: string | ContentBlock[]): string {
+  if (typeof content === "string") return content
+  if (!Array.isArray(content)) return String(content)
+  return content
+    .filter((b): b is ContentBlock & { type: "text"; text: string } => b.type === "text")
+    .map((b) => b.text)
+    .join("\n")
 }
 
 function ThinkingBlock({ text }: { text: string }) {
@@ -85,11 +107,19 @@ function renderAssistantContent(content: string | ContentBlock[]) {
   })
 }
 
-export function MessageView({ type, content, model, timestamp, usage }: MessageViewProps) {
+export function MessageView({ type, content, model, timestamp, usage, index, total }: MessageViewProps) {
   const isUser = type === "user"
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = async () => {
+    const text = extractText(content)
+    await navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }
 
   return (
-    <div className={cn("flex gap-3 py-3", isUser ? "justify-end" : "justify-start")}>
+    <div className={cn("group/msg relative flex gap-3 py-3", isUser ? "justify-end" : "justify-start")}>
       {!isUser && (
         <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-zinc-800">
           <Bot className="size-4 text-zinc-400" />
@@ -97,10 +127,29 @@ export function MessageView({ type, content, model, timestamp, usage }: MessageV
       )}
       <div
         className={cn(
-          "max-w-[85%] space-y-2",
+          "relative max-w-[85%] space-y-2",
           isUser ? "items-end" : "items-start"
         )}
       >
+        {/* Copy button — visible on hover */}
+        <button
+          onClick={handleCopy}
+          className={cn(
+            "absolute -top-1 right-0 z-10 flex items-center gap-1 rounded-md border border-zinc-700 bg-zinc-800 px-1.5 py-1 text-[10px] text-zinc-400 opacity-0 transition-opacity hover:text-zinc-200 group-hover/msg:opacity-100",
+            copied && "text-emerald-400 hover:text-emerald-400"
+          )}
+          title="Copy message"
+        >
+          {copied ? (
+            <>
+              <Check className="size-3" />
+              <span>Copied!</span>
+            </>
+          ) : (
+            <Copy className="size-3" />
+          )}
+        </button>
+
         {isUser ? (
           <div className="rounded-lg bg-zinc-800 px-4 py-2.5">
             <p className="whitespace-pre-wrap text-sm text-zinc-200">{String(content)}</p>
@@ -123,7 +172,14 @@ export function MessageView({ type, content, model, timestamp, usage }: MessageV
             </Badge>
           )}
           {timestamp && (
-            <span className="text-[10px] text-zinc-600">{timestamp}</span>
+            <span className="text-[10px] text-zinc-600" title={timestamp}>
+              {relativeTime(timestamp)}
+            </span>
+          )}
+          {index != null && total != null && (
+            <span className="text-[10px] text-zinc-600">
+              Message {index} of {total}
+            </span>
           )}
         </div>
       </div>

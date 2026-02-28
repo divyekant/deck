@@ -4,6 +4,7 @@ import "./globals.css";
 import { Sidebar } from "@/components/sidebar";
 import { ThemeProvider } from "@/components/theme-provider";
 import { CommandPalette } from "@/components/command-palette";
+import { KeyboardNav } from "@/components/keyboard-nav";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -45,6 +46,7 @@ export default function RootLayout({
             </main>
           </div>
           <CommandPalette />
+          <KeyboardNav />
         </ThemeProvider>
       </body>
     </html>

@@ -16,6 +16,7 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  ChevronUp,
   FileCode2,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -655,7 +656,7 @@ export default function SessionDetailPage() {
       {/* Conversation */}
       <ScrollArea className="flex-1 mt-4">
         <div ref={scrollRef} className="space-y-1 pb-8">
-          {conversationMessages.map((msg) => {
+          {conversationMessages.map((msg, idx) => {
             if (msg.type === "user") {
               const userMsg = msg as UserMessage
               const content =
@@ -672,6 +673,8 @@ export default function SessionDetailPage() {
                   type="user"
                   content={content}
                   timestamp={msg.timestamp}
+                  index={idx + 1}
+                  total={conversationMessages.length}
                 />
               )
             }
@@ -689,6 +692,8 @@ export default function SessionDetailPage() {
                     input_tokens: assistantMsg.message.usage.input_tokens,
                     output_tokens: assistantMsg.message.usage.output_tokens,
                   }}
+                  index={idx + 1}
+                  total={conversationMessages.length}
                 />
               )
             }
@@ -732,6 +737,30 @@ export default function SessionDetailPage() {
           )}
         </div>
       </ScrollArea>
+
+      {/* Jump to top / bottom floating buttons */}
+      {conversationMessages.length > 10 && (
+        <div className="fixed bottom-20 right-8 z-20 flex flex-col gap-1">
+          <button
+            onClick={() => {
+              const viewport = scrollRef.current?.parentElement
+              viewport?.scrollTo({ top: 0, behavior: "smooth" })
+            }}
+            className="flex size-8 items-center justify-center rounded-full bg-zinc-800/80 text-zinc-400 shadow-lg backdrop-blur transition-colors hover:text-zinc-200"
+          >
+            <ChevronUp className="size-4" />
+          </button>
+          <button
+            onClick={() => {
+              const viewport = scrollRef.current?.parentElement
+              if (viewport) viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" })
+            }}
+            className="flex size-8 items-center justify-center rounded-full bg-zinc-800/80 text-zinc-400 shadow-lg backdrop-blur transition-colors hover:text-zinc-200"
+          >
+            <ChevronDown className="size-4" />
+          </button>
+        </div>
+      )}
 
       {/* Resume prompt panel */}
       {showResume && !streaming && (

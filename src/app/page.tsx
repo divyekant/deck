@@ -9,6 +9,8 @@ import { CostTrendChart } from "@/components/cost-trend-chart"
 import { CostBreakdown } from "@/components/cost-breakdown"
 import { WorkHoursChart } from "@/components/work-hours-chart"
 import { BudgetWidget } from "@/components/budget-widget"
+import { StreakWidget } from "@/components/streak-widget"
+import { HighlightsWidget } from "@/components/highlights-widget"
 import { getOverviewStats, getWorkHoursData, getCostTrend, getPeriodCost, getProjectDirs, listSessions } from "@/lib/claude/sessions"
 import { formatCost } from "@/lib/claude/costs"
 import { getSettings } from "@/lib/settings"
@@ -215,6 +217,30 @@ export default async function Home() {
                   No model data available.
                 </p>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Coding Streak */}
+          <Card className="border-zinc-800 bg-zinc-900">
+            <CardHeader>
+              <CardTitle className="text-sm font-medium text-zinc-300">
+                Coding Streak
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <StreakWidget dailyActivity={stats.dailyActivity} />
+            </CardContent>
+          </Card>
+
+          {/* Highlights */}
+          <Card className="border-zinc-800 bg-zinc-900">
+            <CardHeader>
+              <CardTitle className="text-sm font-medium text-zinc-300">
+                Highlights
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <HighlightsWidget sessions={allSessions} totalCost={stats.totalCost} />
             </CardContent>
           </Card>
         </div>
