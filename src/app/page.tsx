@@ -12,6 +12,7 @@ import { BudgetWidget } from "@/components/budget-widget"
 import { StreakWidget } from "@/components/streak-widget"
 import { HighlightsWidget } from "@/components/highlights-widget"
 import { FavoritesBar } from "@/components/favorites-bar"
+import { DailyDigest } from "@/components/daily-digest"
 import { getOverviewStats, getWorkHoursData, getCostTrend, getPeriodCost, getProjectDirs, listSessions } from "@/lib/claude/sessions"
 import { formatCost } from "@/lib/claude/costs"
 import { getSettings } from "@/lib/settings"
@@ -98,6 +99,9 @@ export default async function Home() {
 
       {/* Favorites */}
       <FavoritesBar />
+
+      {/* Daily Digest */}
+      <DailyDigest sessions={allSessions} />
 
       {/* Stats Row */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">

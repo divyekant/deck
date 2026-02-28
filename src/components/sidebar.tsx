@@ -31,6 +31,8 @@ import {
   Cpu,
   HeartPulse,
   FileText,
+  Bell,
+  LayoutTemplate,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -44,6 +46,7 @@ export const navSections = [
     items: [
       { name: "Home", href: "/", icon: BarChart3 },
       { name: "Search", href: "/search", icon: Search },
+      { name: "Notifications", href: "/notifications", icon: Bell },
     ],
   },
   {
@@ -79,6 +82,7 @@ export const navSections = [
       { name: "MCP Servers", href: "/mcp", icon: Puzzle },
       { name: "Ports", href: "/ports", icon: Plug },
       { name: "Skills", href: "/skills", icon: Sparkles },
+      { name: "Templates", href: "/templates", icon: LayoutTemplate },
     ],
   },
 ]

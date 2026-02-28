@@ -25,6 +25,8 @@ import {
   Cpu,
   HeartPulse,
   FileText,
+  Bell,
+  LayoutTemplate,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { VisuallyHidden } from "radix-ui"
@@ -58,6 +60,8 @@ const PAGES: PaletteItem[] = [
   { id: "health", label: "Project Health", section: "Pages", href: "/health", icon: HeartPulse },
   { id: "reports", label: "Reports", section: "Pages", href: "/reports", icon: FileText },
   { id: "models", label: "Model Comparison", section: "Pages", href: "/models", icon: Cpu },
+  { id: "notifications", label: "Notifications", section: "Pages", href: "/notifications", icon: Bell },
+  { id: "templates", label: "Session Templates", section: "Pages", href: "/templates", icon: LayoutTemplate },
   { id: "mcp", label: "MCP Servers", section: "Pages", href: "/mcp", icon: Puzzle },
   { id: "settings", label: "Settings", section: "Pages", href: "/settings", icon: Settings },
 ]
