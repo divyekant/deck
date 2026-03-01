@@ -29,10 +29,20 @@ import { MODEL_PRICING, formatCost } from "@/lib/claude/costs"
 import type { SessionMeta } from "@/lib/claude/types"
 
 // Map short CLI model names to full model IDs for pricing lookup
-const MODEL_MAP: Record<string, { id: string; label: string }> = {
+const CLAUDE_MODELS: Record<string, { id: string; label: string }> = {
   sonnet: { id: "claude-sonnet-4-6", label: "Sonnet" },
   opus: { id: "claude-opus-4-6", label: "Opus" },
   haiku: { id: "claude-haiku-4-5", label: "Haiku" },
+}
+
+const CODEX_MODELS: Record<string, { id: string; label: string }> = {
+  "gpt-5.2-codex": { id: "gpt-5.2-codex", label: "GPT-5.2 Codex" },
+  "gpt-5-codex-mini": { id: "gpt-5-codex-mini", label: "Codex Mini" },
+  "gpt-5.1-codex-max": { id: "gpt-5.1-codex-max", label: "Codex Max" },
+}
+
+function getModels(cli: "claude" | "codex") {
+  return cli === "codex" ? CODEX_MODELS : CLAUDE_MODELS
 }
 
 interface StreamMessage {
@@ -48,8 +58,9 @@ interface CostAccumulator {
   cacheReadTokens: number
 }
 
-function computeCost(model: string, usage: CostAccumulator): number {
-  const fullModelId = MODEL_MAP[model]?.id || "claude-sonnet-4-6"
+function computeCost(model: string, cli: "claude" | "codex", usage: CostAccumulator): number {
+  const models = getModels(cli)
+  const fullModelId = models[model]?.id || "claude-sonnet-4-6"
   const pricing = MODEL_PRICING[fullModelId] ?? MODEL_PRICING["claude-opus-4-6"]
 
   return (
@@ -283,7 +294,7 @@ export default function NewSessionPage() {
   }, [sessionId])
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && !envWarning) {
       e.preventDefault()
       handleLaunch()
     }
@@ -402,7 +413,11 @@ export default function NewSessionPage() {
                   {(["claude", "codex"] as const).map((c) => (
                     <button
                       key={c}
-                      onClick={() => setCli(c)}
+                      onClick={() => {
+                        setCli(c)
+                        const defaults = c === "codex" ? Object.keys(CODEX_MODELS) : Object.keys(CLAUDE_MODELS)
+                        setModel(defaults[0])
+                      }}
                       disabled={isActive}
                       className={`flex-1 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 ${
                         cli === c
@@ -420,7 +435,7 @@ export default function NewSessionPage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-zinc-400">Model</label>
                 <div className="flex gap-2">
-                  {Object.entries(MODEL_MAP).map(([key, { label }]) => (
+                  {Object.entries(getModels(cli)).map(([key, { label }]) => (
                     <button
                       key={key}
                       onClick={() => setModel(key)}
@@ -446,7 +461,7 @@ export default function NewSessionPage() {
                   onChange={(e) => setPrompt(e.target.value)}
                   onKeyDown={handleKeyDown}
                   disabled={isActive}
-                  placeholder="What would you like Claude to do?"
+                  placeholder={cli === "codex" ? "What would you like Codex to do?" : "What would you like Claude to do?"}
                   rows={5}
                   className="w-full resize-none rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 disabled:opacity-50"
                 />
@@ -459,8 +474,8 @@ export default function NewSessionPage() {
               {!isActive ? (
                 <Button
                   onClick={handleLaunch}
-                  disabled={!prompt.trim() || !projectDir || launching}
-                  className="w-full bg-emerald-600 text-white hover:bg-emerald-500"
+                  disabled={!prompt.trim() || !projectDir || launching || !!envWarning}
+                  className="w-full bg-emerald-600 text-white hover:bg-emerald-500 disabled:bg-zinc-700 disabled:text-zinc-500"
                 >
                   {launching ? (
                     <>
@@ -487,8 +502,8 @@ export default function NewSessionPage() {
               )}
 
               {launchError && (
-                <div className="rounded-md border border-red-900 bg-red-950/50 px-3 py-2">
-                  <p className="text-xs text-red-400">{launchError}</p>
+                <div className="max-h-24 overflow-y-auto rounded-md border border-red-900 bg-red-950/50 px-3 py-2">
+                  <p className="text-xs text-red-400 break-words">{launchError}</p>
                 </div>
               )}
             </CardContent>
@@ -519,14 +534,14 @@ export default function NewSessionPage() {
                     variant="outline"
                     className="border-zinc-700 text-zinc-500 text-[10px]"
                   >
-                    {MODEL_MAP[model]?.label || model}
+                    {getModels(cli)[model]?.label || model}
                   </Badge>
                 </div>
 
                 <div className="flex items-center gap-2 text-xs text-zinc-400">
                   <DollarSign className="size-3" />
                   <span className="font-mono">
-                    {formatCost(computeCost(model, cost))}
+                    {formatCost(computeCost(model, cli, cost))}
                   </span>
                   <span className="text-zinc-600">|</span>
                   <span className="font-mono text-zinc-500">
@@ -586,7 +601,7 @@ export default function NewSessionPage() {
                         Session complete
                       </span>
                       <span className="text-xs text-zinc-500">
-                        {formatCost(computeCost(model, cost))} total
+                        {formatCost(computeCost(model, cli, cost))} total
                       </span>
                     </div>
                   </div>
