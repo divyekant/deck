@@ -2,6 +2,15 @@
 
 All notable changes to Deck will be documented in this file.
 
+## [2.2.0] - 2026-03-01
+
+### Added
+- Agents page: browse global and per-project agent definitions
+- Memory page: view MEMORY.md files across all projects
+- Hooks page: inspect Claude Code hooks from settings.json (global + per-project)
+- Setup page enhanced with 3 tabs: CLAUDE.md viewer, Plugins browser, MCP Servers
+- API routes: /api/agents, /api/memory, /api/hooks, /api/claude-md, /api/plugins
+
 ## [2.1.0] - 2026-03-01
 
 ### Added

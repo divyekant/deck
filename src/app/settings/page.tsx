@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select"
 
 const changelog = [
+  { version: "v2.2", title: "Config Depth", features: ["Agents browser", "Memory viewer", "Hooks inspector", "Setup tabs (CLAUDE.md/Plugins/MCP)"] },
   { version: "v2.1", title: "Nav Reshaping", features: ["Sidebar restructured to 19 items", "Costs tabs (Overview/Tokens/Models)", "19 pages consolidated or removed"] },
   { version: "v2.0", title: "About & Changelog", features: ["About & changelog page", "Onboarding experience", "Global status bar"] },
   { version: "v1.9", title: "Session Insights", features: ["Session insights", "Focus mode", "Command history"] },
@@ -199,7 +200,7 @@ export default function SettingsPage() {
           <Sparkles className="h-4 w-4 text-zinc-400" />
           <h2 className="text-sm font-medium text-zinc-300">About Deck</h2>
           <span className="inline-flex items-center rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] font-medium text-zinc-400">
-            v2.1
+            v2.2
           </span>
         </div>
         <p className="text-xs leading-relaxed text-zinc-500">
