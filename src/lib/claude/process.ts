@@ -1,10 +1,37 @@
 import { spawn, ChildProcess } from "child_process";
 import { randomUUID } from "crypto";
 
+import { execSync } from "child_process";
+
 export type CliTool = "claude" | "codex";
 
-const CLI_PATH =
-  "/Users/divyekant/.nvm/versions/node/v24.12.0/bin:/Users/divyekant/.orbstack/bin:/Users/divyekant/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin";
+// Build PATH dynamically: start with system PATH, then append common locations
+function getCliPath(): string {
+  const base = process.env.PATH || "/usr/bin:/bin:/usr/sbin:/sbin";
+  const extras = [
+    `${process.env.HOME}/.nvm/versions/node/v24.12.0/bin`,
+    `${process.env.HOME}/.orbstack/bin`,
+    `${process.env.HOME}/homebrew/bin`,
+    `${process.env.HOME}/.local/bin`,
+    "/usr/local/bin",
+    "/opt/homebrew/bin",
+  ];
+  const parts = new Set(base.split(":"));
+  for (const p of extras) parts.add(p);
+  return Array.from(parts).join(":");
+}
+
+const CLI_PATH = getCliPath();
+
+// Check if a CLI binary is available
+function isCliAvailable(binary: string): boolean {
+  try {
+    execSync(`which ${binary}`, { env: { ...process.env, PATH: CLI_PATH }, stdio: "pipe" });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 interface RunningSession {
   id: string;
@@ -33,6 +60,13 @@ function spawnClaudeProcess(opts: {
   cli?: CliTool;
 }): { error?: string } {
   const binary = opts.cli === "codex" ? "codex" : "claude";
+
+  if (!isCliAvailable(binary)) {
+    return {
+      error: `'${binary}' CLI not found in PATH. Make sure ${binary === "claude" ? "Claude Code" : "Codex"} is installed and accessible.`,
+    };
+  }
+
   let proc: ChildProcess;
   try {
     proc = spawn(binary, opts.args, {

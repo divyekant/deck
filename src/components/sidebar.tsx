@@ -27,6 +27,9 @@ import {
   Webhook,
   HeartPulse,
   Package,
+  GitFork,
+  Shield,
+  FileCheck,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -76,6 +79,9 @@ export const navSections = [
     items: [
       { name: "Hygiene", href: "/hygiene", icon: HeartPulse },
       { name: "Dependencies", href: "/dependencies", icon: Package },
+      { name: "Worktrees", href: "/worktrees", icon: GitFork },
+      { name: "Env Scanner", href: "/env", icon: Shield },
+      { name: "Lint", href: "/lint", icon: FileCheck },
     ],
   },
 ]
@@ -169,7 +175,7 @@ export function Sidebar() {
 
       <Separator className="bg-zinc-800" />
 
-      <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
+      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-4">
         {navSections.map((section, sIdx) => (
           <div key={section.label} className={cn(sIdx > 0 && "mt-4")}>
             {!collapsed && (
@@ -244,7 +250,7 @@ export function Sidebar() {
         </div>
       </nav>
 
-      <div className="px-3 pb-4">
+      <div className="shrink-0 px-3 pb-12">
         {collapsed ? (
           <Button
             asChild

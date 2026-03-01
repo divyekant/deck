@@ -2,6 +2,26 @@
 
 All notable changes to Deck will be documented in this file.
 
+## [2.5.0] - 2026-03-01
+
+### Added
+- Worktrees page: browse active git worktrees across all projects
+- Env Scanner page: find .env files, flag exposed secrets not in .gitignore
+- Config Lint page: CLAUDE.md and settings.json quality checker with actionable issues
+- Diagnose with Claude: diagnostic report generator on Hygiene page with copy-to-clipboard
+- Dependencies graph: cross-project shared dependency visualization (new Graph tab)
+- Repo drill-down: per-repo CLAUDE.md, Memory, Skills, Config tabs on repo detail page
+- API routes: /api/worktrees, /api/env, /api/lint, /api/dependencies/graph, /api/repos/[name]/config
+
+### Fixed
+- Sidebar/main scroll mismatch: sidebar nav now scrolls independently with proper bottom padding
+- New Session: dynamic CLI PATH detection with clear error when claude/codex binary not found
+
+### Changed
+- Sidebar expanded: Health section now has 5 items (Hygiene, Dependencies, Worktrees, Env Scanner, Lint)
+- Command palette updated with new routes and keywords
+- Nav total: 22 items across 5 sections
+
 ## [2.4.0] - 2026-03-01
 
 ### Added

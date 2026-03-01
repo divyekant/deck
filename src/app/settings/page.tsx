@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select"
 
 const changelog = [
+  { version: "v2.5", title: "Health Depth", features: ["Worktrees browser", "Env scanner", "Config lint", "Diagnose with Claude", "Dependency graph", "Repo drill-down"] },
   { version: "v2.4", title: "Session Replay", features: ["Timeline scrubber with event markers", "Files panel sidebar", "Draggable playhead with keyboard nav"] },
   { version: "v2.3", title: "Health Section", features: ["Project hygiene scoring", "Dependencies viewer", "Version mismatch detection"] },
   { version: "v2.2", title: "Config Depth", features: ["Agents browser", "Memory viewer", "Hooks inspector", "Setup tabs (CLAUDE.md/Plugins/MCP)"] },
@@ -202,7 +203,7 @@ export default function SettingsPage() {
           <Sparkles className="h-4 w-4 text-zinc-400" />
           <h2 className="text-sm font-medium text-zinc-300">About Deck</h2>
           <span className="inline-flex items-center rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] font-medium text-zinc-400">
-            v2.4
+            v2.5
           </span>
         </div>
         <p className="text-xs leading-relaxed text-zinc-500">

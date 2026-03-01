@@ -25,6 +25,9 @@ import {
   Webhook,
   HeartPulse,
   Package,
+  GitFork,
+  Shield,
+  FileCheck,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { VisuallyHidden } from "radix-ui"
@@ -63,7 +66,10 @@ const PAGES: PaletteItem[] = [
   { id: "hooks", label: "Hooks", section: "Pages", href: "/hooks", icon: Webhook },
   // Health
   { id: "hygiene", label: "Hygiene", section: "Pages", href: "/hygiene", icon: HeartPulse, keywords: "health score zombie stale" },
-  { id: "dependencies", label: "Dependencies", section: "Pages", href: "/dependencies", icon: Package, keywords: "outdated vulnerabilities" },
+  { id: "dependencies", label: "Dependencies", section: "Pages", href: "/dependencies", icon: Package, keywords: "outdated vulnerabilities graph" },
+  { id: "worktrees", label: "Worktrees", section: "Pages", href: "/worktrees", icon: GitFork, keywords: "git branches isolated" },
+  { id: "env", label: "Env Scanner", section: "Pages", href: "/env", icon: Shield, keywords: "secrets .env gitignore security" },
+  { id: "lint", label: "Config Lint", section: "Pages", href: "/lint", icon: FileCheck, keywords: "claude.md settings quality" },
   // Bottom
   { id: "settings", label: "Settings", section: "Pages", href: "/settings", icon: Settings },
 ]

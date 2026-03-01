@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { ShieldCheck, Check, X } from "lucide-react"
+import { ShieldCheck, Check, X, Stethoscope, Copy, CheckCheck } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -43,8 +44,74 @@ function scoreBadgeClass(score: number): string {
   return "bg-red-900/60 text-red-400"
 }
 
+function generateDiagnostic(project: ProjectHygiene): string {
+  const lines: string[] = []
+  lines.push(`Diagnostic Report: ${project.projectName}`)
+  lines.push(`Score: ${project.score}/100`)
+  lines.push(`${"─".repeat(40)}`)
+
+  const { checks } = project
+  const failingChecks: string[] = []
+
+  if (!checks.claudeMd) {
+    failingChecks.push(
+      `[FAIL] CLAUDE.md is missing\n  → Run \`claude\` in this project to auto-generate a CLAUDE.md file.\n    This file tells Claude Code about your project conventions, structure, and preferences.`
+    )
+  }
+
+  if (!checks.recentSessions) {
+    failingChecks.push(
+      `[FAIL] No recent sessions\n  → This project has no Claude Code session history.\n    Start a session with \`claude\` in the project directory.`
+    )
+  }
+
+  if (!checks.memory) {
+    failingChecks.push(
+      `[FAIL] MEMORY.md is missing\n  → Memory files are created automatically as Claude Code learns about your project.\n    Use Claude Code in this project and it will begin remembering context over time.`
+    )
+  }
+
+  if (!checks.agents) {
+    failingChecks.push(
+      `[FAIL] No agent definitions\n  → Create agent files in \`.claude/agents/\` to define reusable AI workflows.\n    Agents let you encode repeatable tasks like code review, testing, or deployment.`
+    )
+  }
+
+  if (!checks.settings) {
+    failingChecks.push(
+      `[FAIL] settings.json is missing\n  → Run Claude Code in this project to generate a settings.json with hooks and preferences.\n    This file lives at \`.claude/settings.json\` and configures project-level behavior.`
+    )
+  }
+
+  if (failingChecks.length === 0) {
+    lines.push("")
+    lines.push("All checks passed. This project is in great shape.")
+  } else {
+    lines.push("")
+    lines.push(`${failingChecks.length} issue${failingChecks.length > 1 ? "s" : ""} found:`)
+    lines.push("")
+    lines.push(failingChecks.join("\n\n"))
+  }
+
+  return lines.join("\n")
+}
+
 function ProjectCard({ project }: { project: ProjectHygiene }) {
   const color = getProjectColor(project.projectName)
+  const [showDiagnostic, setShowDiagnostic] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  const diagnostic = generateDiagnostic(project)
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(diagnostic)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // Fallback for environments where clipboard API is unavailable
+    }
+  }
 
   return (
     <Card className="border-zinc-800 bg-zinc-900">
@@ -68,7 +135,7 @@ function ProjectCard({ project }: { project: ProjectHygiene }) {
           />
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-3">
         <ul className="space-y-1.5">
           {CHECK_LABELS.map(({ key, label }) => {
             const passed = project.checks[key]
@@ -86,6 +153,38 @@ function ProjectCard({ project }: { project: ProjectHygiene }) {
             )
           })}
         </ul>
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="border-zinc-700"
+          onClick={() => setShowDiagnostic(!showDiagnostic)}
+        >
+          <Stethoscope className="size-4" />
+          {showDiagnostic ? "Hide Diagnostic" : "Diagnose"}
+        </Button>
+
+        {showDiagnostic && (
+          <div className="relative rounded-md border border-zinc-800 bg-zinc-950 p-3">
+            <div className="absolute right-2 top-2">
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                onClick={handleCopy}
+                title="Copy diagnostic to clipboard"
+              >
+                {copied ? (
+                  <CheckCheck className="size-3 text-emerald-400" />
+                ) : (
+                  <Copy className="size-3 text-zinc-400" />
+                )}
+              </Button>
+            </div>
+            <pre className="whitespace-pre-wrap font-mono text-xs leading-relaxed text-zinc-400 pr-8">
+              {diagnostic}
+            </pre>
+          </div>
+        )}
       </CardContent>
     </Card>
   )
