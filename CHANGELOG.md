@@ -2,6 +2,13 @@
 
 All notable changes to Deck will be documented in this file.
 
+## [2.3.0] - 2026-03-01
+
+### Added
+- Hygiene page: per-project health scoring (CLAUDE.md, settings, memory, agents, sessions)
+- Dependencies page: package.json viewer with installed version comparison and mismatch detection
+- API routes: /api/hygiene, /api/dependencies
+
 ## [2.2.0] - 2026-03-01
 
 ### Added
