@@ -2,6 +2,14 @@
 
 All notable changes to Deck will be documented in this file.
 
+## [2.4.0] - 2026-03-01
+
+### Added
+- Session replay: visual timeline scrubber with color-coded event markers (user/assistant/tool)
+- Session replay: draggable playhead with click-to-seek and keyboard navigation
+- Session replay: files panel sidebar showing all files touched during session
+- README.md rewritten with full feature list, navigation structure, and quick start guide
+
 ## [2.3.0] - 2026-03-01
 
 ### Added

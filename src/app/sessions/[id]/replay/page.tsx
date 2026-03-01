@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { MessageView } from "@/components/message-view"
+import { ReplayFilesPanel } from "@/components/replay-files-panel"
 import { formatCost, formatTokens, calculateCost } from "@/lib/claude/costs"
 import type {
   SessionDetail,
@@ -39,6 +40,8 @@ export default function SessionReplayPage() {
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const scrubberRef = useRef<HTMLDivElement>(null)
+  const [dragging, setDragging] = useState(false)
 
   // Fetch session
   useEffect(() => {
@@ -176,6 +179,75 @@ export default function SessionReplayPage() {
   // Progress percentage
   const progressPct = total > 1 ? ((currentIndex) / (total - 1)) * 100 : 100
 
+  // Timeline scrubber: classify each message for marker coloring
+  const messageMarkers = useMemo(() => {
+    return convMessages.map((msg) => {
+      if (msg.type === "user") return "user" as const
+      if (msg.type === "assistant") {
+        const aMsg = msg as AssistantMessage
+        const hasToolUse = Array.isArray(aMsg.message.content) &&
+          aMsg.message.content.some((block: ContentBlock) => block.type === "tool_use")
+        return hasToolUse ? ("tool" as const) : ("assistant" as const)
+      }
+      return "assistant" as const
+    })
+  }, [convMessages])
+
+  // Scrubber: compute index from mouse position on the bar
+  const scrubberIndexFromEvent = useCallback(
+    (e: MouseEvent | React.MouseEvent) => {
+      if (!scrubberRef.current || total === 0) return 0
+      const rect = scrubberRef.current.getBoundingClientRect()
+      const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width))
+      const pct = x / rect.width
+      return Math.max(0, Math.min(Math.round(pct * (total - 1)), total - 1))
+    },
+    [total]
+  )
+
+  // Scrubber drag handlers
+  const handleScrubberMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault()
+      setDragging(true)
+      const idx = scrubberIndexFromEvent(e)
+      setCurrentIndex(idx)
+      setPlaying(false)
+    },
+    [scrubberIndexFromEvent]
+  )
+
+  useEffect(() => {
+    if (!dragging) return
+    const handleMouseMove = (e: MouseEvent) => {
+      const idx = scrubberIndexFromEvent(e)
+      setCurrentIndex(idx)
+    }
+    const handleMouseUp = () => {
+      setDragging(false)
+    }
+    window.addEventListener("mousemove", handleMouseMove)
+    window.addEventListener("mouseup", handleMouseUp)
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove)
+      window.removeEventListener("mouseup", handleMouseUp)
+    }
+  }, [dragging, scrubberIndexFromEvent])
+
+  // Scrubber keyboard navigation
+  const handleScrubberKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "ArrowLeft") {
+        e.preventDefault()
+        setCurrentIndex((prev) => Math.max(prev - 1, 0))
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault()
+        setCurrentIndex((prev) => Math.min(prev + 1, total - 1))
+      }
+    },
+    [total]
+  )
+
   // ---- Render ----
 
   if (error) {
@@ -237,71 +309,146 @@ export default function SessionReplayPage() {
         </div>
       </div>
 
-      {/* Message display area */}
-      <div className="flex-1 overflow-y-auto space-y-1">
-        {visibleMessages.map((msg, idx) => {
-          const isLatest = idx === currentIndex
+      {/* Timeline scrubber bar */}
+      <div className="shrink-0 mb-3">
+        <div className="flex items-center gap-3">
+          {/* Scrubber track */}
+          <div
+            ref={scrubberRef}
+            tabIndex={0}
+            role="slider"
+            aria-label="Timeline scrubber"
+            aria-valuemin={1}
+            aria-valuemax={total}
+            aria-valuenow={currentIndex + 1}
+            className="relative flex-1 h-[6px] rounded-full bg-zinc-800 cursor-pointer select-none focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:ring-offset-1 focus:ring-offset-zinc-950"
+            onMouseDown={handleScrubberMouseDown}
+            onKeyDown={handleScrubberKeyDown}
+          >
+            {/* Filled portion */}
+            <div
+              className="absolute inset-y-0 left-0 rounded-full bg-emerald-500 pointer-events-none"
+              style={{ width: `${progressPct}%` }}
+            />
 
-          if (msg.type === "user") {
-            const userMsg = msg as UserMessage
-            const content =
-              typeof userMsg.message.content === "string"
-                ? userMsg.message.content
-                : userMsg.message.content
-                    .filter((b: ContentBlock) => b.type === "text")
-                    .map((b: ContentBlock) => (b.type === "text" ? b.text : ""))
-                    .join("\n")
-
-            return (
-              <div
-                key={msg.uuid}
-                className={
-                  isLatest
-                    ? "animate-in fade-in slide-in-from-bottom-2 duration-300"
-                    : ""
-                }
-              >
-                <MessageView
-                  type="user"
-                  content={content}
-                  timestamp={msg.timestamp}
-                  index={idx + 1}
-                  total={total}
+            {/* Event markers */}
+            {messageMarkers.map((kind, idx) => {
+              const left = total > 1 ? (idx / (total - 1)) * 100 : 50
+              const colorClass =
+                kind === "user"
+                  ? "bg-blue-400"
+                  : kind === "tool"
+                    ? "bg-amber-400"
+                    : "bg-zinc-500"
+              return (
+                <div
+                  key={idx}
+                  className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 size-2 rounded-full ${colorClass} pointer-events-none ring-1 ring-zinc-900/60`}
+                  style={{ left: `${left}%` }}
                 />
-              </div>
-            )
-          }
+              )
+            })}
 
-          if (msg.type === "assistant") {
-            const assistantMsg = msg as AssistantMessage
-            return (
-              <div
-                key={msg.uuid}
-                className={
-                  isLatest
-                    ? "animate-in fade-in slide-in-from-bottom-2 duration-300"
-                    : ""
-                }
-              >
-                <MessageView
-                  type="assistant"
-                  content={assistantMsg.message.content}
-                  model={assistantMsg.message.model}
-                  timestamp={msg.timestamp}
-                  usage={{
-                    input_tokens: assistantMsg.message.usage.input_tokens,
-                    output_tokens: assistantMsg.message.usage.output_tokens,
-                  }}
-                  index={idx + 1}
-                  total={total}
-                />
-              </div>
-            )
-          }
+            {/* Playhead */}
+            <div
+              className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 size-3.5 rounded-full bg-white border-2 border-emerald-500 shadow-md pointer-events-none z-10"
+              style={{ left: `${progressPct}%` }}
+            />
+          </div>
 
-          return null
-        })}
-        <div ref={messagesEndRef} />
+          {/* Progress text */}
+          <span className="text-xs text-zinc-500 font-mono tabular-nums whitespace-nowrap">
+            Message {currentIndex + 1} of {total}
+          </span>
+        </div>
+
+        {/* Marker legend */}
+        <div className="flex items-center gap-3 mt-1.5 ml-0.5">
+          <span className="flex items-center gap-1 text-[10px] text-zinc-500">
+            <span className="inline-block size-1.5 rounded-full bg-blue-400" />
+            User
+          </span>
+          <span className="flex items-center gap-1 text-[10px] text-zinc-500">
+            <span className="inline-block size-1.5 rounded-full bg-zinc-500" />
+            Assistant
+          </span>
+          <span className="flex items-center gap-1 text-[10px] text-zinc-500">
+            <span className="inline-block size-1.5 rounded-full bg-amber-400" />
+            Tool use
+          </span>
+        </div>
+      </div>
+
+      {/* Message display area + Files panel */}
+      <div className="flex flex-1 min-h-0">
+        <div className="flex-1 overflow-y-auto space-y-1">
+          {visibleMessages.map((msg, idx) => {
+            const isLatest = idx === currentIndex
+
+            if (msg.type === "user") {
+              const userMsg = msg as UserMessage
+              const content =
+                typeof userMsg.message.content === "string"
+                  ? userMsg.message.content
+                  : userMsg.message.content
+                      .filter((b: ContentBlock) => b.type === "text")
+                      .map((b: ContentBlock) => (b.type === "text" ? b.text : ""))
+                      .join("\n")
+
+              return (
+                <div
+                  key={msg.uuid}
+                  className={
+                    isLatest
+                      ? "animate-in fade-in slide-in-from-bottom-2 duration-300"
+                      : ""
+                  }
+                >
+                  <MessageView
+                    type="user"
+                    content={content}
+                    timestamp={msg.timestamp}
+                    index={idx + 1}
+                    total={total}
+                  />
+                </div>
+              )
+            }
+
+            if (msg.type === "assistant") {
+              const assistantMsg = msg as AssistantMessage
+              return (
+                <div
+                  key={msg.uuid}
+                  className={
+                    isLatest
+                      ? "animate-in fade-in slide-in-from-bottom-2 duration-300"
+                      : ""
+                  }
+                >
+                  <MessageView
+                    type="assistant"
+                    content={assistantMsg.message.content}
+                    model={assistantMsg.message.model}
+                    timestamp={msg.timestamp}
+                    usage={{
+                      input_tokens: assistantMsg.message.usage.input_tokens,
+                      output_tokens: assistantMsg.message.usage.output_tokens,
+                    }}
+                    index={idx + 1}
+                    total={total}
+                  />
+                </div>
+              )
+            }
+
+            return null
+          })}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Files touched sidebar */}
+        <ReplayFilesPanel messages={convMessages} currentIndex={currentIndex} />
       </div>
 
       {/* Controls bar — fixed at bottom */}
