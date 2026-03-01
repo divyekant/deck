@@ -69,6 +69,7 @@ export default function NewSessionPage() {
   const [prompt, setPrompt] = useState("")
   const [launching, setLaunching] = useState(false)
   const [launchError, setLaunchError] = useState<string | null>(null)
+  const [envWarning, setEnvWarning] = useState<string | null>(null)
 
   // Stream state
   const [sessionId, setSessionId] = useState<string | null>(null)
@@ -115,6 +116,25 @@ export default function NewSessionPage() {
       }
     }
     fetchProjects()
+    // Preflight: check if CLI is accessible
+    async function checkEnv() {
+      try {
+        const res = await fetch("/api/sessions/start", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ projectDir: "/tmp", model: "sonnet", prompt: "test", cli: "claude" }),
+        })
+        if (!res.ok) {
+          const data = await res.json()
+          if (data.error?.includes("CLI not found")) {
+            setEnvWarning("Claude Code CLI is not available in this environment. Session launching requires running Deck locally (bun dev) with Claude Code installed.")
+          }
+        }
+      } catch {
+        // Ignore
+      }
+    }
+    checkEnv()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -338,6 +358,16 @@ export default function NewSessionPage() {
         </div>
         <Separator className="bg-zinc-800" />
       </div>
+
+      {/* Environment warning */}
+      {envWarning && (
+        <div className="mt-4 rounded-md border border-amber-800 bg-amber-950/50 px-4 py-3">
+          <p className="text-sm text-amber-300">{envWarning}</p>
+          <p className="mt-1 text-xs text-amber-500">
+            Run <code className="rounded bg-amber-900/50 px-1 py-0.5">bun dev</code> locally to use this feature, or launch sessions directly from your terminal with <code className="rounded bg-amber-900/50 px-1 py-0.5">claude</code>.
+          </p>
+        </div>
+      )}
 
       {/* Main content — form + stream */}
       <div className="flex flex-1 gap-6 mt-4 min-h-0">
