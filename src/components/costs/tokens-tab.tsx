@@ -118,7 +118,6 @@ function DonutChart({ data }: { data: TokenDistribution }) {
   const innerR = 65
   const size = 240
 
-  // Build arc segments
   const segments: {
     key: string
     label: string
@@ -129,7 +128,7 @@ function DonutChart({ data }: { data: TokenDistribution }) {
     endAngle: number
   }[] = []
 
-  let currentAngle = -90 // start at top
+  let currentAngle = -90
 
   for (const seg of DONUT_SEGMENTS) {
     const value = data[seg.key]
@@ -195,7 +194,6 @@ function DonutChart({ data }: { data: TokenDistribution }) {
             />
           ))}
         </svg>
-        {/* Center text */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-2xl font-semibold tabular-nums text-zinc-100">
             {formatTokens(total)}
@@ -204,7 +202,6 @@ function DonutChart({ data }: { data: TokenDistribution }) {
         </div>
       </div>
 
-      {/* Legend */}
       <div className="grid grid-cols-2 gap-x-6 gap-y-3">
         {segments.map((seg) => (
           <div key={seg.key} className="flex items-center gap-2">
@@ -256,7 +253,6 @@ function CacheEfficiencyChart({ data }: { data: CacheEfficiencyPoint[] }) {
     )
   }
 
-  // Map data points to coordinates
   const points = data.map((d, i) => {
     const x = paddingLeft + (i / Math.max(data.length - 1, 1)) * chartWidth
     const y = paddingTop + chartHeight - (d.cacheHitRate / 100) * chartHeight
@@ -265,19 +261,16 @@ function CacheEfficiencyChart({ data }: { data: CacheEfficiencyPoint[] }) {
 
   const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ")
 
-  // Area path: line + close along bottom
   const areaPath =
     linePath +
     ` L ${points[points.length - 1].x} ${paddingTop + chartHeight}` +
     ` L ${points[0].x} ${paddingTop + chartHeight} Z`
 
-  // Y-axis ticks: 0, 25, 50, 75, 100
   const yTicks = [0, 25, 50, 75, 100].map((v) => ({
     value: v,
     y: paddingTop + chartHeight - (v / 100) * chartHeight,
   }))
 
-  // Average line Y
   const avgY = paddingTop + chartHeight - (average / 100) * chartHeight
 
   return (
@@ -287,7 +280,6 @@ function CacheEfficiencyChart({ data }: { data: CacheEfficiencyPoint[] }) {
         className="h-full w-full"
         preserveAspectRatio="xMidYMid meet"
       >
-        {/* Grid lines */}
         {yTicks.map((tick) => (
           <line
             key={tick.value}
@@ -301,7 +293,6 @@ function CacheEfficiencyChart({ data }: { data: CacheEfficiencyPoint[] }) {
           />
         ))}
 
-        {/* Y-axis labels */}
         {yTicks.map((tick) => (
           <text
             key={`label-${tick.value}`}
@@ -315,7 +306,6 @@ function CacheEfficiencyChart({ data }: { data: CacheEfficiencyPoint[] }) {
           </text>
         ))}
 
-        {/* Average dashed line */}
         <line
           x1={paddingLeft}
           y1={avgY}
@@ -337,10 +327,8 @@ function CacheEfficiencyChart({ data }: { data: CacheEfficiencyPoint[] }) {
           avg {average.toFixed(1)}%
         </text>
 
-        {/* Filled area */}
         <path d={areaPath} fill="rgb(16, 185, 129)" opacity="0.08" />
 
-        {/* Line */}
         <path
           d={linePath}
           fill="none"
@@ -350,7 +338,6 @@ function CacheEfficiencyChart({ data }: { data: CacheEfficiencyPoint[] }) {
           strokeLinejoin="round"
         />
 
-        {/* Data points */}
         {points.map((p, i) => (
           <circle
             key={i}
@@ -364,10 +351,9 @@ function CacheEfficiencyChart({ data }: { data: CacheEfficiencyPoint[] }) {
           />
         ))}
 
-        {/* X-axis labels: show every 5th session */}
         {points
           .filter((_, i) => i % 5 === 0 || i === points.length - 1)
-          .map((p, _idx) => (
+          .map((p) => (
             <text
               key={`x-${p.sessionIndex}`}
               x={p.x}
@@ -381,7 +367,6 @@ function CacheEfficiencyChart({ data }: { data: CacheEfficiencyPoint[] }) {
           ))}
       </svg>
 
-      {/* Tooltip */}
       {hoveredIndex !== null && points[hoveredIndex] && (
         <div
           className="pointer-events-none absolute z-10 rounded-md border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-xs shadow-lg whitespace-nowrap"
@@ -458,7 +443,6 @@ function DailyTokenTrendChart({ data }: { data: DailyTrendPoint[] }) {
         className="h-full w-full"
         preserveAspectRatio="xMidYMid meet"
       >
-        {/* Grid lines */}
         {yTicks.map((tick) => (
           <line
             key={tick.value}
@@ -472,7 +456,6 @@ function DailyTokenTrendChart({ data }: { data: DailyTrendPoint[] }) {
           />
         ))}
 
-        {/* Y-axis labels */}
         {yTicks.map((tick) => (
           <text
             key={`label-${tick.value}`}
@@ -486,7 +469,6 @@ function DailyTokenTrendChart({ data }: { data: DailyTrendPoint[] }) {
           </text>
         ))}
 
-        {/* Bars */}
         {data.map((d, i) => {
           const barH =
             d.totalTokens > 0
@@ -511,7 +493,6 @@ function DailyTokenTrendChart({ data }: { data: DailyTrendPoint[] }) {
           )
         })}
 
-        {/* X-axis labels */}
         {xLabels.map((d) => {
           const x =
             paddingLeft + d.index * (barWidth + gap) + gap / 2 + barWidth / 2
@@ -530,7 +511,6 @@ function DailyTokenTrendChart({ data }: { data: DailyTrendPoint[] }) {
         })}
       </svg>
 
-      {/* Tooltip */}
       {hoveredIndex !== null && data[hoveredIndex] && (
         <div
           className="pointer-events-none absolute z-10 rounded-md border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-xs shadow-lg whitespace-nowrap"
@@ -552,14 +532,11 @@ function DailyTokenTrendChart({ data }: { data: DailyTrendPoint[] }) {
   )
 }
 
-// ---- Skeleton Loading State ----
+// ---- Loading Skeleton ----
 
-function TokensSkeleton() {
+function TokensTabSkeleton() {
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">
-        Token Analytics
-      </h1>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-5">
           <Skeleton className="mb-4 h-4 w-36" />
@@ -586,9 +563,9 @@ function TokensSkeleton() {
   )
 }
 
-// ---- Main Page ----
+// ---- Main Component ----
 
-export default function TokensPage() {
+export default function TokensTab() {
   const [data, setData] = useState<TokensData | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -608,30 +585,20 @@ export default function TokensPage() {
     fetchData()
   }, [])
 
-  if (loading) return <TokensSkeleton />
+  if (loading) return <TokensTabSkeleton />
 
   if (!data) {
     return (
-      <div className="space-y-8">
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">
-          Token Analytics
-        </h1>
-        <p className="py-16 text-center text-sm text-zinc-500">
-          No session data available.
-        </p>
-      </div>
+      <p className="py-16 text-center text-sm text-zinc-500">
+        No session data available.
+      </p>
     )
   }
 
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">
-        Token Analytics
-      </h1>
-
       {/* Row 1: Donut + Cache Efficiency side by side */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Token Distribution Donut */}
         <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-5">
           <h2 className="mb-4 text-sm font-medium text-zinc-300">
             Token Distribution
@@ -639,7 +606,6 @@ export default function TokensPage() {
           <DonutChart data={data.tokenDistribution} />
         </div>
 
-        {/* Cache Efficiency Line Chart */}
         <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-5">
           <h2 className="mb-4 text-sm font-medium text-zinc-300">
             Cache Efficiency

@@ -6,7 +6,6 @@ import {
   Home,
   MessageSquare,
   GitBranch,
-  Puzzle,
   Settings,
   Plus,
   ArrowRight,
@@ -15,18 +14,17 @@ import {
   DollarSign,
   Activity,
   Plug,
-  Coins,
-  Cpu,
-  Bell,
-  Bookmark,
-  Rss,
-  Download,
-  Lightbulb,
-  Terminal,
-  Info,
-  TrendingUp,
   FileDiff,
   Sparkles,
+  BarChart2,
+  Clock,
+  Camera,
+  Wrench,
+  Bot,
+  Brain,
+  Webhook,
+  HeartPulse,
+  Package,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { VisuallyHidden } from "radix-ui"
@@ -43,28 +41,30 @@ interface PaletteItem {
 }
 
 const PAGES: PaletteItem[] = [
+  // Overview
   { id: "home", label: "Home", section: "Pages", href: "/", icon: Home },
-  { id: "search", label: "Search", section: "Pages", href: "/search", icon: Search },
+  // Monitor
   { id: "live", label: "Live Sessions", section: "Pages", href: "/live", icon: Radio },
   { id: "sessions", label: "Sessions", section: "Pages", href: "/sessions", icon: MessageSquare },
-  { id: "costs", label: "Costs", section: "Pages", href: "/costs", icon: DollarSign },
-  { id: "repos", label: "Repos", section: "Pages", href: "/repos", icon: GitBranch },
-  { id: "pulse", label: "Repo Pulse", section: "Pages", href: "/pulse", icon: Activity },
-  { id: "tokens", label: "Token Analytics", section: "Pages", href: "/tokens", icon: Coins },
+  { id: "costs", label: "Costs", section: "Pages", href: "/costs", icon: DollarSign, keywords: "tokens models spending" },
+  { id: "setup", label: "Setup", section: "Pages", href: "/setup", icon: Wrench, keywords: "claude.md plugins mcp" },
   { id: "ports", label: "Ports", section: "Pages", href: "/ports", icon: Plug },
-  { id: "models", label: "Model Comparison", section: "Pages", href: "/models", icon: Cpu },
-  { id: "notifications", label: "Notifications", section: "Pages", href: "/notifications", icon: Bell },
-  { id: "activity", label: "Activity Feed", section: "Pages", href: "/activity", icon: Rss },
-  { id: "bookmarks", label: "Bookmarks", section: "Pages", href: "/bookmarks", icon: Bookmark },
-  { id: "git", label: "Git Activity", section: "Pages", href: "/git", icon: GitBranch },
-  { id: "export", label: "Data Export", section: "Pages", href: "/export", icon: Download },
-  { id: "insights", label: "Insights", section: "Pages", href: "/insights", icon: Lightbulb },
-  { id: "commands", label: "Command History", section: "Pages", href: "/commands", icon: Terminal },
-  { id: "analytics", label: "Analytics", section: "Pages", href: "/analytics", icon: TrendingUp },
+  // Workspace
+  { id: "repos", label: "Repos", section: "Pages", href: "/repos", icon: GitBranch },
+  { id: "work-graph", label: "Work Graph", section: "Pages", href: "/work-graph", icon: BarChart2, keywords: "commits activity" },
+  { id: "pulse", label: "Repo Pulse", section: "Pages", href: "/pulse", icon: Activity },
+  { id: "timeline", label: "Timeline", section: "Pages", href: "/timeline", icon: Clock, keywords: "git history" },
   { id: "diffs", label: "Diffs", section: "Pages", href: "/diffs", icon: FileDiff },
+  { id: "snapshots", label: "Snapshots", section: "Pages", href: "/snapshots", icon: Camera, keywords: "branches status" },
+  // Config
   { id: "skills", label: "Skills", section: "Pages", href: "/skills", icon: Sparkles },
-  { id: "about", label: "About Deck", section: "Pages", href: "/about", icon: Info },
-  { id: "mcp", label: "MCP Servers", section: "Pages", href: "/mcp", icon: Puzzle },
+  { id: "agents", label: "Agents", section: "Pages", href: "/agents", icon: Bot },
+  { id: "memory", label: "Memory", section: "Pages", href: "/memory", icon: Brain, keywords: "MEMORY.md" },
+  { id: "hooks", label: "Hooks", section: "Pages", href: "/hooks", icon: Webhook },
+  // Health
+  { id: "hygiene", label: "Hygiene", section: "Pages", href: "/hygiene", icon: HeartPulse, keywords: "health score zombie stale" },
+  { id: "dependencies", label: "Dependencies", section: "Pages", href: "/dependencies", icon: Package, keywords: "outdated vulnerabilities" },
+  // Bottom
   { id: "settings", label: "Settings", section: "Pages", href: "/settings", icon: Settings },
 ]
 

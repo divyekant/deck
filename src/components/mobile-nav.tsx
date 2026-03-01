@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation"
 import {
   BarChart3,
   MessageSquare,
-  Search,
+  DollarSign,
   Radio,
   Menu,
   X,
@@ -18,7 +18,7 @@ import { navSections } from "@/components/sidebar"
 const primaryItems = [
   { name: "Home", href: "/", icon: BarChart3 },
   { name: "Sessions", href: "/sessions", icon: MessageSquare },
-  { name: "Search", href: "/search", icon: Search },
+  { name: "Costs", href: "/costs", icon: DollarSign },
   { name: "Live", href: "/live", icon: Radio },
 ]
 

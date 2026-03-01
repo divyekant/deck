@@ -6,7 +6,10 @@ import { formatCost } from "@/lib/claude/costs"
 import CostTips from "@/components/cost-tips"
 import CostForecast from "@/components/cost-forecast"
 import { truncate } from "@/lib/format"
+import TokensTab from "@/components/costs/tokens-tab"
+import ModelsTab from "@/components/costs/models-tab"
 
+type CostTab = "overview" | "tokens" | "models"
 type Range = "thisMonth" | "lastMonth" | "90d" | "all"
 
 interface DailyCost {
@@ -307,7 +310,14 @@ interface TipSession {
   totalInputTokens: number
 }
 
+const COST_TABS: { value: CostTab; label: string }[] = [
+  { value: "overview", label: "Overview" },
+  { value: "tokens", label: "Tokens" },
+  { value: "models", label: "Models" },
+]
+
 export default function CostsPage() {
+  const [activeTab, setActiveTab] = useState<CostTab>("overview")
   const [range, setRange] = useState<Range>("thisMonth")
   const [data, setData] = useState<CostsData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -358,29 +368,51 @@ export default function CostsPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header + range selector */}
+      {/* Header + tabs + range selector */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">
-          Costs
-        </h1>
-        <div className="flex items-center gap-1">
-          {RANGE_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => setRange(opt.value)}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                range === opt.value
-                  ? "bg-zinc-700 text-zinc-100"
-                  : "text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-6">
+          <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">
+            Costs
+          </h1>
+          <div className="flex items-center gap-1 border-b border-zinc-800">
+            {COST_TABS.map((tab) => (
+              <button
+                key={tab.value}
+                onClick={() => setActiveTab(tab.value)}
+                className={`border-b-2 px-3 pb-2 text-sm font-medium transition-colors ${
+                  activeTab === tab.value
+                    ? "border-emerald-500 text-zinc-100"
+                    : "border-transparent text-zinc-500 hover:text-zinc-300"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
+        {activeTab === "overview" && (
+          <div className="flex items-center gap-1">
+            {RANGE_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setRange(opt.value)}
+                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                  range === opt.value
+                    ? "bg-zinc-700 text-zinc-100"
+                    : "text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
-      {loading && !data ? (
+      {activeTab === "tokens" && <TokensTab />}
+      {activeTab === "models" && <ModelsTab />}
+
+      {activeTab === "overview" && (loading && !data ? (
         <div className="py-16 text-center text-sm text-zinc-500">Loading...</div>
       ) : data ? (
         <>
@@ -525,7 +557,7 @@ export default function CostsPage() {
         <div className="py-16 text-center text-sm text-zinc-500">
           Failed to load cost data.
         </div>
-      )}
+      ))}
     </div>
   )
 }

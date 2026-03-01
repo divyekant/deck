@@ -39,16 +39,16 @@ interface ModelsData {
 // ---- Color Map ----
 
 const MODEL_COLORS: Record<string, string> = {
-  "claude-opus-4-6": "#3b82f6",       // blue-500
-  "claude-sonnet-4-6": "#60a5fa",     // blue-400
-  "claude-haiku-4-5": "#93c5fd",      // blue-300
-  "gpt-4.1": "#22c55e",              // green-500
-  "gpt-4.1-mini": "#4ade80",         // green-400
-  "gpt-4.1-nano": "#86efac",         // green-300
-  "gpt-5.2-codex": "#10b981",        // emerald-500
-  "codex-mini-latest": "#34d399",    // emerald-400
-  "o3": "#a3e635",                   // lime-400
-  "o4-mini": "#bef264",             // lime-300
+  "claude-opus-4-6": "#3b82f6",
+  "claude-sonnet-4-6": "#60a5fa",
+  "claude-haiku-4-5": "#93c5fd",
+  "gpt-4.1": "#22c55e",
+  "gpt-4.1-mini": "#4ade80",
+  "gpt-4.1-nano": "#86efac",
+  "gpt-5.2-codex": "#10b981",
+  "codex-mini-latest": "#34d399",
+  "o3": "#a3e635",
+  "o4-mini": "#bef264",
 }
 
 function getModelColor(model: string): string {
@@ -59,7 +59,6 @@ function getModelColor(model: string): string {
   if (m.includes("haiku")) return "#93c5fd"
   if (m.includes("codex")) return "#34d399"
   if (m.includes("gpt") || m.includes("o3") || m.includes("o4")) return "#22c55e"
-  // Fallback: hash-based color
   let hash = 0
   for (let i = 0; i < model.length; i++) {
     hash = model.charCodeAt(i) + ((hash << 5) - hash)
@@ -369,7 +368,6 @@ function ModelUsageTrend({ trend }: { trend: MonthlyTrend }) {
   const chartWidth = width - paddingLeft - paddingRight
   const chartHeight = height - paddingTop - paddingBottom
 
-  // Stack the data: compute cumulative values for each month
   const stacked = useMemo(() => {
     const layers: { model: string; values: number[]; cumValues: number[] }[] = []
     const cumulative = new Array(months.length).fill(0)
@@ -391,14 +389,12 @@ function ModelUsageTrend({ trend }: { trend: MonthlyTrend }) {
 
   const { layers, maxValue } = stacked
 
-  // Y-axis nice max
   const yMax = useMemo(() => {
     if (maxValue <= 5) return maxValue + 1
     const magnitude = Math.pow(10, Math.floor(Math.log10(maxValue)))
     return Math.ceil(maxValue / magnitude) * magnitude || maxValue * 1.2
   }, [maxValue])
 
-  // Y-axis ticks
   const yTicks = useMemo(() => {
     const ticks = []
     const step = yMax / 4
@@ -410,21 +406,17 @@ function ModelUsageTrend({ trend }: { trend: MonthlyTrend }) {
     return ticks
   }, [yMax, chartHeight])
 
-  // X positions
   const xPositions = months.map(
     (_, i) => paddingLeft + (i / (months.length - 1)) * chartWidth
   )
 
-  // Build area paths (bottom-up stacking)
   const areaPaths = useMemo(() => {
     return layers.map((layer) => {
       const cum = layer.cumValues as unknown as { bottom: number; top: number }[]
-      // Top line (left to right)
       const topPoints = cum.map(
         (v, i) =>
           `${xPositions[i]},${paddingTop + chartHeight - (v.top / yMax) * chartHeight}`
       )
-      // Bottom line (right to left)
       const bottomPoints = [...cum]
         .reverse()
         .map(
@@ -449,7 +441,6 @@ function ModelUsageTrend({ trend }: { trend: MonthlyTrend }) {
           className="h-full w-full"
           preserveAspectRatio="xMidYMid meet"
         >
-          {/* Grid lines */}
           {yTicks.map((tick) => (
             <line
               key={tick.value}
@@ -463,7 +454,6 @@ function ModelUsageTrend({ trend }: { trend: MonthlyTrend }) {
             />
           ))}
 
-          {/* Y-axis labels */}
           {yTicks.map((tick) => (
             <text
               key={`y-${tick.value}`}
@@ -477,7 +467,6 @@ function ModelUsageTrend({ trend }: { trend: MonthlyTrend }) {
             </text>
           ))}
 
-          {/* Stacked areas */}
           {areaPaths.map((area) => (
             <path
               key={area.model}
@@ -487,7 +476,6 @@ function ModelUsageTrend({ trend }: { trend: MonthlyTrend }) {
             />
           ))}
 
-          {/* X-axis labels */}
           {months.map((m, i) => (
             <text
               key={`x-${m}`}
@@ -503,7 +491,6 @@ function ModelUsageTrend({ trend }: { trend: MonthlyTrend }) {
         </svg>
       </div>
 
-      {/* Legend */}
       <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
         {series.map((s) => (
           <div key={s.model} className="flex items-center gap-1.5 text-xs text-zinc-400">
@@ -545,7 +532,6 @@ function EfficiencyScatter({ models }: { models: ModelStats[] }) {
   const maxDuration = Math.max(...filtered.map((m) => m.avgDuration / 1000)) * 1.15
   const maxSessions = Math.max(...filtered.map((m) => m.sessionCount))
 
-  // Axis ticks
   const xTicks = useMemo(() => {
     const ticks = []
     const step = maxCost / 4
@@ -583,7 +569,6 @@ function EfficiencyScatter({ models }: { models: ModelStats[] }) {
           className="h-full w-full"
           preserveAspectRatio="xMidYMid meet"
         >
-          {/* Grid lines */}
           {xTicks.map((tick) => (
             <line
               key={`xg-${tick.value}`}
@@ -609,7 +594,6 @@ function EfficiencyScatter({ models }: { models: ModelStats[] }) {
             />
           ))}
 
-          {/* Axis labels */}
           {xTicks.map((tick) => (
             <text
               key={`xl-${tick.value}`}
@@ -635,7 +619,6 @@ function EfficiencyScatter({ models }: { models: ModelStats[] }) {
             </text>
           ))}
 
-          {/* Axis titles */}
           <text
             x={paddingLeft + chartWidth / 2}
             y={height - 4}
@@ -656,7 +639,6 @@ function EfficiencyScatter({ models }: { models: ModelStats[] }) {
             Avg Duration (s)
           </text>
 
-          {/* Bubbles */}
           {filtered.map((m) => {
             const cx = paddingLeft + (m.avgCost / maxCost) * chartWidth
             const cy =
@@ -702,7 +684,6 @@ function EfficiencyScatter({ models }: { models: ModelStats[] }) {
 
 function Recommendation({ models }: { models: ModelStats[] }) {
   const insight = useMemo(() => {
-    // Find the cheapest model with >10 sessions
     const qualified = models.filter((m) => m.sessionCount > 10)
     if (qualified.length < 2) return null
 
@@ -711,7 +692,7 @@ function Recommendation({ models }: { models: ModelStats[] }) {
 
     if (cheapest.model === mostExpensive.model) return null
 
-    const shiftPercent = 0.3 // 30% of expensive sessions could shift
+    const shiftPercent = 0.3
     const potentialSavings =
       mostExpensive.sessionCount *
       shiftPercent *
@@ -781,7 +762,7 @@ function Recommendation({ models }: { models: ModelStats[] }) {
 
 // ---- Loading Skeleton ----
 
-function LoadingSkeleton() {
+function ModelsTabSkeleton() {
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -808,44 +789,13 @@ function LoadingSkeleton() {
         <Skeleton className="mb-4 h-5 w-40" />
         <Skeleton className="h-[280px] w-full" />
       </div>
-      <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-5">
-        <Skeleton className="mb-4 h-5 w-48" />
-        <Skeleton className="h-[320px] w-full" />
-      </div>
     </div>
   )
 }
 
-// ---- Empty State ----
+// ---- Main Component ----
 
-function EmptyState() {
-  return (
-    <div className="flex flex-col items-center justify-center py-24">
-      <svg
-        width="48"
-        height="48"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="rgb(113, 113, 122)"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="mb-4"
-      >
-        <rect x="3" y="3" width="18" height="18" rx="2" />
-        <path d="M3 9h18" />
-        <path d="M9 21V9" />
-      </svg>
-      <p className="text-sm text-zinc-500">
-        No model data available. Start some sessions to see model comparisons.
-      </p>
-    </div>
-  )
-}
-
-// ---- Main Page ----
-
-export default function ModelsPage() {
+export default function ModelsTab() {
   const [data, setData] = useState<ModelsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -866,38 +816,48 @@ export default function ModelsPage() {
     fetchData()
   }, [])
 
+  if (loading) return <ModelsTabSkeleton />
+
+  if (error || !data) {
+    return (
+      <p className="py-16 text-center text-sm text-zinc-500">
+        Failed to load model data.
+      </p>
+    )
+  }
+
+  if (data.models.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24">
+        <svg
+          width="48"
+          height="48"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="rgb(113, 113, 122)"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="mb-4"
+        >
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <path d="M3 9h18" />
+          <path d="M9 21V9" />
+        </svg>
+        <p className="text-sm text-zinc-500">
+          No model data available. Start some sessions to see model comparisons.
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">
-        Models
-      </h1>
-
-      {loading ? (
-        <LoadingSkeleton />
-      ) : error || !data ? (
-        <div className="py-16 text-center text-sm text-zinc-500">
-          Failed to load model data.
-        </div>
-      ) : data.models.length === 0 ? (
-        <EmptyState />
-      ) : (
-        <>
-          {/* a) Model Overview Cards */}
-          <ModelOverviewCards models={data.models} />
-
-          {/* b) Head-to-Head Comparison */}
-          <HeadToHead models={data.models} />
-
-          {/* c) Model Usage Trend */}
-          <ModelUsageTrend trend={data.monthlyTrend} />
-
-          {/* d) Efficiency Scatter Plot */}
-          <EfficiencyScatter models={data.models} />
-
-          {/* e) Recommendation */}
-          <Recommendation models={data.models} />
-        </>
-      )}
+      <ModelOverviewCards models={data.models} />
+      <HeadToHead models={data.models} />
+      <ModelUsageTrend trend={data.monthlyTrend} />
+      <EfficiencyScatter models={data.models} />
+      <Recommendation models={data.models} />
     </div>
   )
 }

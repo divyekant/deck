@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Settings as SettingsIcon, Check } from "lucide-react"
+import { Settings as SettingsIcon, Check, Sparkles, Code2, ExternalLink } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+
+const changelog = [
+  { version: "v2.1", title: "Nav Reshaping", features: ["Sidebar restructured to 19 items", "Costs tabs (Overview/Tokens/Models)", "19 pages consolidated or removed"] },
+  { version: "v2.0", title: "About & Changelog", features: ["About & changelog page", "Onboarding experience", "Global status bar"] },
+  { version: "v1.9", title: "Session Insights", features: ["Session insights", "Focus mode", "Command history"] },
+  { version: "v1.8", title: "Enhanced Search", features: ["Enhanced search", "Session grouping", "Cost forecasting"] },
+  { version: "v1.7", title: "Dashboard Customization", features: ["Dashboard customization", "Data export", "Session annotations"] },
+  { version: "v1.6", title: "Activity Feed", features: ["Activity feed", "Bookmarks", "Git dashboard"] },
+  { version: "v1.5", title: "Notifications", features: ["Notifications", "Daily digest", "Session templates"] },
+  { version: "v1.4", title: "Project Health", features: ["Project health", "Reports", "Favorites"] },
+  { version: "v1.3", title: "Session Chains", features: ["Session chains", "Model comparison", "Mobile nav"] },
+  { version: "v1.2", title: "Session Replay", features: ["Session replay", "Prompt library", "Tags analytics"] },
+  { version: "v1.1", title: "Token Analytics", features: ["Token analytics", "Cost tips", "Session heatmap"] },
+  { version: "v1.0", title: "Keyboard Navigation", features: ["Keyboard navigation", "Streak/highlights widgets", "Session polish"] },
+  { version: "v0.9", title: "Ports Monitor", features: ["Ports monitor", "Session compare", "Context window viz"] },
+  { version: "v0.8", title: "Repo Pulse", features: ["Repo pulse", "Work graph", "Snapshots"] },
+  { version: "v0.7", title: "Timeline", features: ["Timeline", "Diffs", "Skills browser"] },
+  { version: "v0.6", title: "Search & Analytics", features: ["Search", "Analytics page"] },
+  { version: "v0.5", title: "Session New", features: ["Session new", "Live sessions"] },
+  { version: "v0.4", title: "Session Detail", features: ["Session detail", "Cost tracking"] },
+  { version: "v0.3", title: "Repos & Settings", features: ["Repos page", "Settings"] },
+  { version: "v0.2", title: "Sessions List", features: ["Sessions list", "MCP servers"] },
+  { version: "v0.1", title: "Initial Release", features: ["Home dashboard", "Sidebar", "Initial layout"] },
+]
 
 interface DeckSettings {
   budget: number
@@ -168,6 +192,67 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* About */}
+      <div className="max-w-lg space-y-4">
+        <div className="flex items-center gap-2.5">
+          <Sparkles className="h-4 w-4 text-zinc-400" />
+          <h2 className="text-sm font-medium text-zinc-300">About Deck</h2>
+          <span className="inline-flex items-center rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] font-medium text-zinc-400">
+            v2.1
+          </span>
+        </div>
+        <p className="text-xs leading-relaxed text-zinc-500">
+          A local-first dashboard for Claude Code analytics. Reads session data from{" "}
+          <code className="rounded bg-zinc-800 px-1 py-0.5 text-[10px] text-zinc-300">
+            ~/.claude/projects/
+          </code>{" "}
+          and provides rich analytics, insights, and tools.
+        </p>
+        <a
+          href="https://github.com/divyekant/deck"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 rounded-md border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
+        >
+          <Code2 className="h-3.5 w-3.5" />
+          View on GitHub
+          <ExternalLink className="h-3 w-3 text-zinc-600" />
+        </a>
+      </div>
+
+      {/* Changelog */}
+      <div className="max-w-lg space-y-3">
+        <h2 className="text-sm font-medium text-zinc-300">Changelog</h2>
+        <div className="space-y-2">
+          {changelog.map((entry) => (
+            <div
+              key={entry.version}
+              className="rounded-lg border border-zinc-800 bg-zinc-900 p-3"
+            >
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] font-semibold text-zinc-300">
+                  {entry.version}
+                </span>
+                <span className="text-xs font-medium text-zinc-400">
+                  {entry.title}
+                </span>
+              </div>
+              <ul className="mt-1.5 space-y-0.5 pl-0.5">
+                {entry.features.map((feature) => (
+                  <li
+                    key={feature}
+                    className="flex items-center gap-1.5 text-xs text-zinc-500"
+                  >
+                    <span className="h-0.5 w-0.5 shrink-0 rounded-full bg-zinc-600" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
