@@ -8,6 +8,7 @@ services:
       - ~/.claude:/home/node/.claude:ro
       - ~/.codex:/home/node/.codex:ro
       - ~/.deck:/home/node/.deck
+      - ~/Projects:/Users/divyekant/Projects:ro
     environment:
       - HOME=/home/node
     restart: unless-stopped
