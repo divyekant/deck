@@ -1,48 +1,77 @@
 # Deck
 
-A local-first dashboard for Claude Code analytics. Reads directly from `~/.claude/projects/` to surface session data, costs, project health, and configuration — no cloud, no telemetry.
+**A local-first dashboard for Claude Code and Codex CLI analytics.**
 
-**v2.3.0**
+Deck reads directly from `~/.claude/projects/` and `~/.codex/` to surface session data, costs, project health, and configuration. No cloud. No database. No telemetry. Everything stays on your machine.
+
+**v2.5.0** | [Changelog](CHANGELOG.md)
+
+<!-- Screenshot placeholder: add a screenshot of the Deck dashboard here -->
+
+---
 
 ## Features
 
+### Overview
+
+The home dashboard displays aggregate statistics, budget tracking, recent activity, and project-level breakdowns at a glance.
+
 ### Monitor
-- **Sessions** — searchable table with filters, cost tracking, model breakdowns, token usage
-- **Session Replay** — conversation replay with play/pause/speed controls and thinking block expansion
-- **Costs** — three-tab breakdown: Overview, Tokens, Models
-- **Live** — active session detection and monitoring
-- **Ports** — port usage tracking across projects
-- **Diffs** — file change tracking
+
+| Page | Description |
+|------|-------------|
+| Live | Real-time detection and monitoring of active Claude Code / Codex sessions |
+| Sessions | Searchable, filterable session table with cost tracking, model breakdowns, and token usage |
+| Session Detail | Full conversation replay with play/pause/speed controls, timeline scrubber, and thinking block expansion |
+| Costs | Three-tab cost breakdown: Overview, Tokens, Models |
+| Setup | Three-tab inspector: CLAUDE.md viewer, Plugins browser, MCP Servers |
+| Ports | Port usage tracking across projects |
 
 ### Workspace
-- **Repos** — per-project breakdown with color-coded accent system
-- **Skills** — skill browser across projects
-- **Work Graph** — task and dependency visualization
-- **Timeline** — chronological project activity
-- **Snapshots** — point-in-time project state capture
-- **New Session** — browser-based Claude Code session launcher
+
+| Page | Description |
+|------|-------------|
+| Repos | Per-project breakdown with color-coded accent system |
+| Work Graph | Task and dependency visualization |
+| Repo Pulse | Activity heatmap and commit-level pulse view |
+| Timeline | Chronological project activity feed |
+| Diffs | File change tracking across sessions |
+| Snapshots | Point-in-time project state captures |
 
 ### Config
-- **Setup** — three-tab inspector: CLAUDE.md viewer, Plugins browser, MCP Servers
-- **Agents** — global and per-project agent browser
-- **Memory** — memory file viewer across projects
-- **Hooks** — global and per-project hooks inspector (settings.json)
+
+| Page | Description |
+|------|-------------|
+| Skills | Skill browser across all projects |
+| Agents | Global and per-project agent definitions |
+| Memory | MEMORY.md file viewer across projects |
+| Hooks | Global and per-project hooks inspector (settings.json) |
 
 ### Health
-- **Hygiene** — project hygiene scoring across 5 dimensions
-- **Dependencies** — version mismatch detection and dependency viewer
 
-### Utilities
-- **Command Palette** (Cmd+K) — fuzzy search across all pages and actions
+| Page | Description |
+|------|-------------|
+| Hygiene | Per-project health scoring across 5 dimensions with diagnostic report generation |
+| Dependencies | Package version mismatch detection with cross-project shared dependency graph |
+| Worktrees | Active git worktree browser across all projects |
+| Env Scanner | Finds .env files and flags exposed secrets not in .gitignore |
+| Config Lint | CLAUDE.md and settings.json quality checker with actionable issues |
 
-## Tech Stack
+### Session Launcher
 
-- Next.js 15 (App Router), React 19, TypeScript
-- Tailwind CSS v4, shadcn/ui, Radix UI, lucide-react
-- Bun (package manager)
-- Docker (OrbStack)
+Launch Claude Code or Codex CLI sessions directly from the browser. Includes CLI-aware model selection, project picker, and prompt input. Available via the "New Session" button in the sidebar.
+
+---
 
 ## Quick Start
+
+### Docker (recommended)
+
+```bash
+docker compose up -d --build
+```
+
+Open [http://localhost:3001](http://localhost:3001).
 
 ### Local development
 
@@ -53,7 +82,14 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-### Production
+You can also use npm instead of bun:
+
+```bash
+npm install
+npm run dev
+```
+
+### Production build (local)
 
 ```bash
 bun run build
@@ -62,34 +98,191 @@ bun start
 
 Runs on [http://localhost:3001](http://localhost:3001).
 
-### Docker (OrbStack)
+---
 
-```bash
-# Build and run
-docker compose up -d
+## Docker Setup
 
-# Rebuild after changes
-bun run build && docker compose up -d --build
+The `docker-compose.yml` mounts your local configuration directories into the container:
+
+| Host Path | Container Path | Mode |
+|-----------|---------------|------|
+| `~/.claude` | `/home/node/.claude` | Read-only |
+| `~/.codex` | `/home/node/.codex` | Read-only |
+| `~/.deck` | `/home/node/.deck` | Read-write |
+| `~/Projects` | `/Users/divyekant/Projects` | Read-only |
+
+**Important:** The projects mount path (`~/Projects:/Users/divyekant/Projects:ro`) is specific to the default configuration. Update it to match your own projects directory:
+
+```yaml
+# docker-compose.yml
+volumes:
+  - ~/.claude:/home/node/.claude:ro
+  - ~/.codex:/home/node/.codex:ro
+  - ~/.deck:/home/node/.deck
+  - ~/your-projects-dir:/Users/yourname/your-projects-dir:ro
 ```
 
-The container mounts `~/.claude` (read-only) and `~/.codex` (read-only) into the container, and persists its own state at `~/.deck`.
+The Docker image is based on `node:22-alpine` and includes `claude` and `codex` CLI tools pre-installed globally, enabling the session launcher to start new sessions from within the container.
 
-## Navigation Structure
+---
 
-| Section     | Pages                                              |
-|-------------|-----------------------------------------------------|
-| Overview    | Home                                                |
-| Monitor     | Sessions, Costs, Live, Ports, Diffs                 |
-| Workspace   | Repos, Skills, Work Graph, Timeline, Snapshots, New Session |
-| Config      | Setup, Agents, Memory, Hooks                        |
-| Health      | Hygiene, Dependencies                               |
+## Navigation
 
-5 sections, 19 pages total.
+22 sidebar items across 5 sections, plus Settings and New Session.
 
-## Data Source
+| Section | Icon | Page | Route |
+|---------|------|------|-------|
+| Overview | BarChart3 | Home | `/` |
+| Monitor | Radio | Live | `/live` |
+| Monitor | MessageSquare | Sessions | `/sessions` |
+| Monitor | DollarSign | Costs | `/costs` |
+| Monitor | Wrench | Setup | `/setup` |
+| Monitor | Plug | Ports | `/ports` |
+| Workspace | GitBranch | Repos | `/repos` |
+| Workspace | BarChart2 | Work Graph | `/work-graph` |
+| Workspace | Activity | Repo Pulse | `/pulse` |
+| Workspace | Clock | Timeline | `/timeline` |
+| Workspace | FileDiff | Diffs | `/diffs` |
+| Workspace | Camera | Snapshots | `/snapshots` |
+| Config | Sparkles | Skills | `/skills` |
+| Config | Bot | Agents | `/agents` |
+| Config | Brain | Memory | `/memory` |
+| Config | Webhook | Hooks | `/hooks` |
+| Health | HeartPulse | Hygiene | `/hygiene` |
+| Health | Package | Dependencies | `/dependencies` |
+| Health | GitFork | Worktrees | `/worktrees` |
+| Health | Shield | Env Scanner | `/env` |
+| Health | FileCheck | Lint | `/lint` |
+| -- | Settings | Settings | `/settings` |
+| -- | Plus | New Session | `/sessions/new` |
 
-Deck reads from your local Claude Code data directory (`~/.claude/projects/`). No data leaves your machine. All analytics are computed client-side from JSONL session files.
+Additional routes: `/sessions/[id]` (session detail), `/sessions/[id]/replay` (session replay), `/repos/[name]` (repo detail).
+
+---
+
+## API Routes
+
+### Sessions
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/sessions` | List all sessions with metadata |
+| GET | `/api/sessions/[id]` | Get single session detail |
+| GET | `/api/sessions/[id]/diffs` | Get file diffs for a session |
+| GET | `/api/sessions/[id]/stream` | Stream session events (SSE) |
+| GET | `/api/sessions/running` | List currently active sessions |
+| POST | `/api/sessions/start` | Launch a new CLI session |
+| POST | `/api/sessions/resume` | Resume an existing session |
+| POST | `/api/sessions/[id]/stop` | Stop a running session |
+
+### Analytics
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/analytics` | Aggregate analytics data |
+| GET | `/api/stats` | Summary statistics |
+| GET | `/api/costs` | Cost breakdowns |
+| GET | `/api/tokens` | Token usage data |
+| GET | `/api/models` | Model usage data |
+| GET | `/api/activity` | Activity feed |
+| GET | `/api/insights` | AI-generated insights |
+
+### Projects and Repos
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/projects/[name]` | Project-level data |
+| GET | `/api/pulse` | Repo pulse / activity heatmap |
+| GET | `/api/work-graph` | Work graph data |
+| GET | `/api/git` | Git metadata |
+| GET | `/api/snapshots` | Project snapshots |
+| GET | `/api/ports` | Port usage |
+| GET | `/api/repos/[name]/config` | Per-repo configuration |
+
+### Config
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/skills` | Skills data |
+| GET | `/api/agents` | Agent definitions |
+| GET | `/api/memory` | Memory files |
+| GET | `/api/hooks` | Hooks configuration |
+| GET | `/api/claude-md` | CLAUDE.md contents |
+| GET | `/api/plugins` | Plugin data |
+| GET | `/api/mcp` | MCP server data |
+
+### Health
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/hygiene` | Project hygiene scores |
+| GET | `/api/dependencies` | Dependency data |
+| GET | `/api/dependencies/graph` | Cross-project dependency graph |
+| GET | `/api/worktrees` | Git worktree data |
+| GET | `/api/env` | Environment file scan |
+| GET | `/api/lint` | Config lint results |
+
+### Utilities
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/health` | App health check |
+| GET | `/api/search` | Global search |
+| GET | `/api/prompts` | Prompt data |
+| GET | `/api/chains` | Chain data |
+| GET | `/api/commands` | Command data |
+| GET/POST | `/api/settings` | App settings |
+| GET/POST | `/api/favorites` | Favorites |
+| GET/POST | `/api/bookmarks` | Bookmarks |
+| GET/POST | `/api/annotations` | Annotations |
+| GET/POST | `/api/dashboard-prefs` | Dashboard preferences |
+| GET/POST | `/api/notifications` | Notifications |
+| GET | `/api/templates` | Templates |
+| GET | `/api/reports` | Reports |
+| GET | `/api/export` | Data export |
+
+---
+
+## Architecture
+
+Deck is a Next.js application using the App Router. All data is read from the local filesystem at runtime.
+
+- **Data source**: `~/.claude/projects/` (JSONL session files, CLAUDE.md, settings.json, MEMORY.md, etc.) and `~/.codex/`
+- **Compute**: Analytics are computed server-side from raw JSONL files on each request. No database, no caching layer, no background workers.
+- **State**: User preferences (favorites, bookmarks, annotations, dashboard layout) are stored in `~/.deck/` as JSON files.
+- **Telemetry**: None. No data leaves your machine.
+- **Deployment**: Docker container (recommended) or local Node.js / Bun dev server.
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 15 (App Router) |
+| UI | React 19 |
+| Language | TypeScript |
+| Styling | Tailwind CSS v4 |
+| Components | shadcn/ui, Radix UI |
+| Icons | lucide-react |
+| Package Manager | Bun (or npm) |
+| Runtime | Node.js 22 |
+| Container | Docker (Alpine) |
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on setting up the development environment, running tests, and submitting pull requests.
+
+---
 
 ## License
 
-Private.
+MIT
+
+---
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a full list of changes across all versions.
