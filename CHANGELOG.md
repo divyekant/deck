@@ -2,6 +2,18 @@
 
 All notable changes to Deck will be documented in this file.
 
+## [2.7.0] - 2026-03-01
+
+### Added
+- Light/dark mode toggle with full theme support across all components
+- Theme toggle icon in sidebar header next to "Deck" logo
+
+### Changed
+- Home page: flat 3-column CSS grid replacing nested flex layout (eliminates card gaps)
+- Settings page: two-column layout with settings left, changelog right
+- Timeline: fixed dot alignment on vertical line
+- 15+ components updated from hardcoded zinc colors to CSS variable tokens
+
 ## [2.6.0] - 2026-03-01
 
 ### Added

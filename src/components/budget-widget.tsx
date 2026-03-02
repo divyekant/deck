@@ -48,15 +48,15 @@ export function BudgetWidget({ spent, budget, periodStart }: BudgetWidgetProps) 
       ? "text-red-500"
       : projectedTotal > budget
         ? "text-amber-500"
-        : "text-zinc-500"
-    : "text-zinc-500"
+        : "text-muted-foreground"
+    : "text-muted-foreground"
 
   const showWarning = projectedTotal !== null && projectedTotal > budget
 
   return (
     <div className="space-y-2">
       {/* Progress bar */}
-      <div className="h-2.5 w-full overflow-hidden rounded-full bg-zinc-800">
+      <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
         <div
           className={cn("h-full rounded-full transition-all", barColor)}
           style={{ width: `${clampedPct}%` }}
@@ -80,7 +80,7 @@ export function BudgetWidget({ spent, budget, periodStart }: BudgetWidgetProps) 
             {showWarning && <AlertTriangle className="size-3" />}
             Projected: ${projectedTotal.toFixed(2)}
           </span>
-          <span className="text-zinc-500">
+          <span className="text-muted-foreground">
             ~${dailyBurn.toFixed(2)}/day
           </span>
         </div>

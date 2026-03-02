@@ -20,7 +20,7 @@ export function ActivityChart({ data, label }: ActivityChartProps) {
   return (
     <div>
       {label && (
-        <p className="mb-3 text-sm font-medium text-zinc-300">{label}</p>
+        <p className="mb-3 text-sm font-medium text-muted-foreground">{label}</p>
       )}
       <div className="relative">
         <div className="flex items-end gap-[3px]" style={{ height: 160 }}>
@@ -37,15 +37,15 @@ export function ActivityChart({ data, label }: ActivityChartProps) {
                 onMouseLeave={() => setHovered(null)}
               >
                 {isHovered && (
-                  <div className="absolute -top-14 z-10 rounded-md border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-xs shadow-lg whitespace-nowrap">
-                    <p className="font-medium text-zinc-200">{item.count} sessions</p>
+                  <div className="absolute -top-14 z-10 rounded-md border bg-popover px-2.5 py-1.5 text-xs shadow-lg whitespace-nowrap">
+                    <p className="font-medium text-popover-foreground">{item.count} sessions</p>
                     <p className="text-muted-foreground">${item.cost.toFixed(2)}</p>
                   </div>
                 )}
                 <div
                   className={cn(
                     "w-full min-h-[2px] rounded-sm transition-colors",
-                    isHovered ? "bg-zinc-300" : "bg-zinc-600"
+                    isHovered ? "bg-foreground/50" : "bg-muted-foreground/40"
                   )}
                   style={{ height: `${Math.max(heightPct, 1.5)}%` }}
                 />

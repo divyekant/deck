@@ -34,13 +34,13 @@ export function CostBreakdown({ data, total }: CostBreakdownProps) {
           return (
             <div key={item.model} className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-zinc-300">{item.model}</span>
-                <span className="text-sm font-medium text-zinc-200">
+                <span className="text-sm text-foreground/80">{item.model}</span>
+                <span className="text-sm font-medium text-foreground">
                   ${item.cost.toFixed(2)}
                 </span>
               </div>
               <div className="flex items-center gap-3">
-                <div className="h-2 flex-1 rounded-full bg-zinc-800">
+                <div className="h-2 flex-1 rounded-full bg-muted">
                   <div
                     className={`h-2 rounded-full ${getModelColor(item.model)}`}
                     style={{ width: `${widthPercent}%` }}
@@ -54,10 +54,10 @@ export function CostBreakdown({ data, total }: CostBreakdownProps) {
           )
         })}
       </div>
-      <Separator className="my-3 bg-zinc-800" />
+      <Separator className="my-3" />
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-zinc-300">Total</span>
-        <span className="text-sm font-semibold text-zinc-100">${total.toFixed(2)}</span>
+        <span className="text-sm font-medium text-muted-foreground">Total</span>
+        <span className="text-sm font-semibold text-foreground">${total.toFixed(2)}</span>
       </div>
     </div>
   )

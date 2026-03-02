@@ -52,7 +52,7 @@ export function SessionCard({
   return (
     <Card
       className={cn(
-        "cursor-pointer border-zinc-800 bg-zinc-900 transition-colors hover:border-zinc-700 hover:bg-zinc-800/80 border-l-2",
+        "cursor-pointer transition-colors hover:bg-accent/50 border-l-2",
         color.borderLeft,
         onClick && "cursor-pointer"
       )}
@@ -68,7 +68,7 @@ export function SessionCard({
                   "text-[10px]",
                   isCodex
                     ? "bg-emerald-950 text-emerald-400 border border-emerald-800"
-                    : "bg-zinc-800 text-zinc-300"
+                    : "bg-muted text-muted-foreground"
                 )}
               >
                 {isCodex ? "Codex" : "CC"}
@@ -76,11 +76,11 @@ export function SessionCard({
               <Badge variant="secondary" className={`${color.bg} ${color.text} border ${color.border}`}>
                 {projectName}
               </Badge>
-              <Badge variant="outline" className="border-zinc-700 text-zinc-500 text-[10px]">
+              <Badge variant="outline" className="text-[10px]">
                 {model}
               </Badge>
             </div>
-            <p className="mt-2 text-sm text-zinc-300 leading-relaxed">
+            <p className="mt-2 text-sm text-foreground/80 leading-relaxed">
               {truncate(firstPrompt, 80)}
             </p>
           </div>

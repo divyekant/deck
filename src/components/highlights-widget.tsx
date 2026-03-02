@@ -34,7 +34,7 @@ export function HighlightsWidget({ sessions }: HighlightsWidgetProps) {
   if (targetSessions.length === 0) {
     return (
       <div>
-        <p className="text-sm text-zinc-500">No recent activity</p>
+        <p className="text-sm text-muted-foreground">No recent activity</p>
       </div>
     )
   }
@@ -60,7 +60,7 @@ export function HighlightsWidget({ sessions }: HighlightsWidgetProps) {
     }
   }
 
-  const iconClass = "size-4 text-zinc-500"
+  const iconClass = "size-4 text-muted-foreground"
 
   const highlights: HighlightItem[] = [
     {
@@ -83,12 +83,12 @@ export function HighlightsWidget({ sessions }: HighlightsWidgetProps) {
 
   return (
     <div className="space-y-3">
-      <p className="text-xs font-medium text-zinc-500">{label}</p>
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
       <div className="space-y-2.5">
         {highlights.map((item, i) => (
           <div key={i} className="flex items-center gap-2.5">
             {item.icon}
-            <span className="text-sm text-zinc-300">{item.text}</span>
+            <span className="text-sm text-foreground/80">{item.text}</span>
           </div>
         ))}
       </div>

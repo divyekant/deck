@@ -86,15 +86,15 @@ export default async function Home() {
     <div className="space-y-8">
       {/* Greeting */}
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           {getGreeting()}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          You have <span className="text-zinc-300 font-medium">{stats.totalSessions}</span> sessions
-          across <span className="text-zinc-300 font-medium">{projectCount}</span> projects.
-          {topProject && <> <span className="text-zinc-300 font-medium">{topProject.name}</span> has the most activity.</>}
-          {commitsToday > 0 && <> You&apos;ve landed <span className="text-zinc-300 font-medium">{commitsToday}</span> commits today.</>}
-          {" "}Total spend: <span className="text-zinc-300 font-medium">{formatCost(stats.totalCost)}</span>.
+          You have <span className="font-medium text-foreground">{stats.totalSessions}</span> sessions
+          across <span className="font-medium text-foreground">{projectCount}</span> projects.
+          {topProject && <> <span className="font-medium text-foreground">{topProject.name}</span> has the most activity.</>}
+          {commitsToday > 0 && <> You&apos;ve landed <span className="font-medium text-foreground">{commitsToday}</span> commits today.</>}
+          {" "}Total spend: <span className="font-medium text-foreground">{formatCost(stats.totalCost)}</span>.
         </p>
       </div>
 
@@ -135,130 +135,122 @@ export default async function Home() {
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Left column — Activity chart + Cost Trend (spans 2 cols on lg) */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
-          <Card className="border-zinc-800 bg-zinc-900">
-            <CardHeader>
-              <CardTitle className="text-sm font-medium text-zinc-300">
-                Activity
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {stats.dailyActivity.length > 0 ? (
-                <ActivityChart
-                  data={stats.dailyActivity.map((d) => ({
-                    date: d.date,
-                    count: d.sessionCount,
-                    cost: d.cost,
-                  }))}
-                />
-              ) : (
-                <p className="py-8 text-center text-sm text-muted-foreground">
-                  No activity in the last 30 days.
-                </p>
-              )}
-            </CardContent>
-          </Card>
+        {/* Row 1: Activity + Budget */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Activity
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {stats.dailyActivity.length > 0 ? (
+              <ActivityChart
+                data={stats.dailyActivity.map((d) => ({
+                  date: d.date,
+                  count: d.sessionCount,
+                  cost: d.cost,
+                }))}
+              />
+            ) : (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                No activity in the last 30 days.
+              </p>
+            )}
+          </CardContent>
+        </Card>
 
-          <Card className="border-zinc-800 bg-zinc-900">
-            <CardHeader>
-              <CardTitle className="text-sm font-medium text-zinc-300">
-                Cost Trend
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CostTrendChart data={costTrend} days={30} />
-            </CardContent>
-          </Card>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Budget
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <BudgetWidget spent={periodCost} budget={budget} periodStart={periodStartISO} />
+          </CardContent>
+        </Card>
 
-        {/* Right column — Budget + When You Work + Cost by Model */}
-        <div className="flex flex-col gap-6">
-          {/* Budget */}
-          <Card className="border-zinc-800 bg-zinc-900">
-            <CardHeader>
-              <CardTitle className="text-sm font-medium text-zinc-300">
-                Budget
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <BudgetWidget spent={periodCost} budget={budget} periodStart={periodStartISO} />
-            </CardContent>
-          </Card>
+        {/* Row 2: Cost Trend + When You Work */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Cost Trend
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CostTrendChart data={costTrend} days={30} />
+          </CardContent>
+        </Card>
 
-          {/* When You Work */}
-          <Card className="border-zinc-800 bg-zinc-900">
-            <CardHeader>
-              <CardTitle className="text-sm font-medium text-zinc-300">
-                When You Work
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {workHours.some((h) => h.count > 0) ? (
-                <WorkHoursChart data={workHours} />
-              ) : (
-                <p className="py-8 text-center text-sm text-muted-foreground">
-                  No session data yet.
-                </p>
-              )}
-            </CardContent>
-          </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              When You Work
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {workHours.some((h) => h.count > 0) ? (
+              <WorkHoursChart data={workHours} />
+            ) : (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                No session data yet.
+              </p>
+            )}
+          </CardContent>
+        </Card>
 
-          {/* Cost by Model */}
-          <Card className="border-zinc-800 bg-zinc-900">
-            <CardHeader>
-              <CardTitle className="text-sm font-medium text-zinc-300">
-                Cost by Model
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {stats.modelBreakdown.length > 0 ? (
-                <CostBreakdown
-                  data={stats.modelBreakdown.map((m) => ({
-                    model: m.model,
-                    cost: m.totalCost,
-                    sessions: m.sessionCount,
-                  }))}
-                  total={stats.totalCost}
-                />
-              ) : (
-                <p className="py-8 text-center text-sm text-muted-foreground">
-                  No model data available.
-                </p>
-              )}
-            </CardContent>
-          </Card>
+        {/* Row 3: Three equal columns */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Cost by Model
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {stats.modelBreakdown.length > 0 ? (
+              <CostBreakdown
+                data={stats.modelBreakdown.map((m) => ({
+                  model: m.model,
+                  cost: m.totalCost,
+                  sessions: m.sessionCount,
+                }))}
+                total={stats.totalCost}
+              />
+            ) : (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                No model data available.
+              </p>
+            )}
+          </CardContent>
+        </Card>
 
-          {/* Coding Streak */}
-          <Card className="border-zinc-800 bg-zinc-900">
-            <CardHeader>
-              <CardTitle className="text-sm font-medium text-zinc-300">
-                Coding Streak
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <StreakWidget dailyActivity={stats.dailyActivity} />
-            </CardContent>
-          </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Coding Streak
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <StreakWidget dailyActivity={stats.dailyActivity} />
+          </CardContent>
+        </Card>
 
-          {/* Highlights */}
-          <Card className="border-zinc-800 bg-zinc-900">
-            <CardHeader>
-              <CardTitle className="text-sm font-medium text-zinc-300">
-                Highlights
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <HighlightsWidget sessions={allSessions} totalCost={stats.totalCost} />
-            </CardContent>
-          </Card>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Highlights
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <HighlightsWidget sessions={allSessions} totalCost={stats.totalCost} />
+          </CardContent>
+        </Card>
       </div>
 
       {/* Recent Sessions */}
       {stats.recentSessions.length > 0 && (
         <div>
-          <h2 className="mb-4 text-lg font-semibold tracking-tight text-zinc-100">
+          <h2 className="mb-4 text-lg font-semibold tracking-tight text-foreground">
             Recent Sessions
           </h2>
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">

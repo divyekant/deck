@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select"
 
 const changelog = [
+  { version: "v2.7", title: "UI Polish & Light Mode", features: ["Light/dark mode toggle", "Home page grid fix", "Timeline dot alignment", "Settings two-column layout", "Theme icon in header"] },
   { version: "v2.6", title: "Session Auth & Resume", features: ["Auth token settings (API key + OAuth)", "Multi-turn session resume", "CLAUDECODE env isolation", "Docker auth passthrough"] },
   { version: "v2.5", title: "Health Depth", features: ["Worktrees browser", "Env scanner", "Config lint", "Diagnose with Claude", "Dependency graph", "Repo drill-down"] },
   { version: "v2.4", title: "Session Replay", features: ["Timeline scrubber with event markers", "Files panel sidebar", "Draggable playhead with keyboard nav"] },
@@ -147,15 +148,19 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <SettingsIcon className="size-5 text-zinc-400" />
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">
+        <SettingsIcon className="size-5 text-muted-foreground" />
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           Settings
         </h1>
       </div>
 
-      <Card className="max-w-lg border-zinc-800 bg-zinc-900">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_1fr]">
+        {/* Left column — settings */}
+        <div className="space-y-6">
+
+      <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-medium text-zinc-300">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
             Budget
           </CardTitle>
         </CardHeader>
@@ -179,7 +184,7 @@ export default function SettingsPage() {
                 step={10}
                 value={budget}
                 onChange={(e) => setBudget(e.target.value)}
-                className="border-zinc-700 bg-zinc-800 pl-7 text-zinc-100 focus-visible:border-zinc-600 focus-visible:ring-zinc-700/50"
+                className="pl-7"
                 placeholder="500"
               />
             </div>
@@ -191,10 +196,10 @@ export default function SettingsPage() {
               Budget Reset Day
             </label>
             <Select value={resetDay} onValueChange={setResetDay}>
-              <SelectTrigger className="w-full border-zinc-700 bg-zinc-800 text-zinc-100">
+              <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="border-zinc-700 bg-zinc-800">
+              <SelectContent>
                 {Array.from({ length: 28 }, (_, i) => i + 1).map((day) => (
                   <SelectItem key={day} value={String(day)}>
                     {day === 1
@@ -218,7 +223,6 @@ export default function SettingsPage() {
             <Button
               onClick={handleSave}
               disabled={saving}
-              className="bg-zinc-100 text-zinc-900 hover:bg-zinc-200"
             >
               {saving ? "Saving..." : "Save"}
             </Button>
@@ -236,9 +240,9 @@ export default function SettingsPage() {
       </Card>
 
       {/* Authentication */}
-      <Card className="max-w-lg border-zinc-800 bg-zinc-900">
+      <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-sm font-medium text-zinc-300">
+          <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
             <Key className="size-3.5" />
             Authentication
           </CardTitle>
@@ -254,21 +258,21 @@ export default function SettingsPage() {
                 type={showToken ? "text" : "password"}
                 value={authToken}
                 onChange={(e) => setAuthToken(e.target.value)}
-                className="border-zinc-700 bg-zinc-800 pr-10 font-mono text-xs text-zinc-100 focus-visible:border-zinc-600 focus-visible:ring-zinc-700/50"
+                className="pr-10 font-mono text-xs"
                 placeholder="sk-ant-api03-... or sk-ant-oat01-..."
               />
               <button
                 type="button"
                 onClick={() => setShowToken(!showToken)}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
                 {showToken ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
               </button>
             </div>
             {authToken.trim() && (
               <div className="flex items-center gap-1.5 pt-0.5">
-                <Shield className="size-3 text-zinc-500" />
-                <span className="text-[10px] text-zinc-500">
+                <Shield className="size-3 text-muted-foreground" />
+                <span className="text-[10px] text-muted-foreground">
                   Detected:{" "}
                   <span className={detectTokenType(authToken) === "oauth" ? "text-violet-400" : "text-emerald-400"}>
                     {detectTokenType(authToken) === "oauth" ? "OAuth Subscription Token" : "API Key"}
@@ -278,7 +282,7 @@ export default function SettingsPage() {
             )}
             <p className="text-xs text-muted-foreground">
               Required for launching sessions from Docker. Get your key from{" "}
-              <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" className="text-zinc-400 underline hover:text-zinc-200">
+              <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
                 console.anthropic.com
               </a>
             </p>
@@ -288,7 +292,6 @@ export default function SettingsPage() {
             <Button
               onClick={handleSaveAuth}
               disabled={savingAuth}
-              className="bg-zinc-100 text-zinc-900 hover:bg-zinc-200"
             >
               {savingAuth ? "Saving..." : "Save"}
             </Button>
@@ -306,17 +309,17 @@ export default function SettingsPage() {
       </Card>
 
       {/* About */}
-      <div className="max-w-lg space-y-4">
+      <div className="space-y-4">
         <div className="flex items-center gap-2.5">
-          <Sparkles className="h-4 w-4 text-zinc-400" />
-          <h2 className="text-sm font-medium text-zinc-300">About Deck</h2>
-          <span className="inline-flex items-center rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] font-medium text-zinc-400">
-            v2.6
+          <Sparkles className="h-4 w-4 text-muted-foreground" />
+          <h2 className="text-sm font-medium text-foreground">About Deck</h2>
+          <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+            v2.7
           </span>
         </div>
-        <p className="text-xs leading-relaxed text-zinc-500">
+        <p className="text-xs leading-relaxed text-muted-foreground">
           A local-first dashboard for Claude Code analytics. Reads session data from{" "}
-          <code className="rounded bg-zinc-800 px-1 py-0.5 text-[10px] text-zinc-300">
+          <code className="rounded bg-muted px-1 py-0.5 text-[10px] text-foreground">
             ~/.claude/projects/
           </code>{" "}
           and provides rich analytics, insights, and tools.
@@ -325,46 +328,36 @@ export default function SettingsPage() {
           href="https://github.com/divyekant/deck"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 rounded-md border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
+          className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         >
           <Code2 className="h-3.5 w-3.5" />
           View on GitHub
-          <ExternalLink className="h-3 w-3 text-zinc-600" />
+          <ExternalLink className="h-3 w-3" />
         </a>
       </div>
 
-      {/* Changelog */}
-      <div className="max-w-lg space-y-3">
-        <h2 className="text-sm font-medium text-zinc-300">Changelog</h2>
-        <div className="space-y-2">
-          {changelog.map((entry) => (
-            <div
-              key={entry.version}
-              className="rounded-lg border border-zinc-800 bg-zinc-900 p-3"
-            >
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] font-semibold text-zinc-300">
+        </div>{/* end left column */}
+
+        {/* Right column — changelog */}
+        <div className="space-y-3">
+          <h2 className="text-sm font-medium text-muted-foreground">Changelog</h2>
+          <div className="divide-y divide-border rounded-lg border">
+            {changelog.map((entry) => (
+              <div key={entry.version} className="flex gap-3 px-3 py-2">
+                <span className="inline-flex h-5 shrink-0 items-center rounded bg-muted px-1.5 text-[10px] font-semibold text-muted-foreground">
                   {entry.version}
                 </span>
-                <span className="text-xs font-medium text-zinc-400">
-                  {entry.title}
-                </span>
+                <div className="min-w-0">
+                  <span className="text-xs font-medium text-foreground">{entry.title}</span>
+                  <span className="ml-2 text-[11px] text-muted-foreground">
+                    {entry.features.join(" · ")}
+                  </span>
+                </div>
               </div>
-              <ul className="mt-1.5 space-y-0.5 pl-0.5">
-                {entry.features.map((feature) => (
-                  <li
-                    key={feature}
-                    className="flex items-center gap-1.5 text-xs text-zinc-500"
-                  >
-                    <span className="h-0.5 w-0.5 shrink-0 rounded-full bg-zinc-600" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      </div>{/* end grid */}
     </div>
   )
 }

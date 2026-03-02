@@ -11,7 +11,7 @@ interface StatsCardProps {
 
 export function StatsCard({ title, value, subtitle, icon: Icon }: StatsCardProps) {
   return (
-    <Card className="relative border-zinc-800 bg-zinc-900">
+    <Card className="relative">
       <CardContent className="pt-0">
         {Icon && (
           <div className="absolute right-5 top-5">
@@ -21,7 +21,7 @@ export function StatsCard({ title, value, subtitle, icon: Icon }: StatsCardProps
         <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
           {title}
         </p>
-        <p className="mt-1 text-3xl font-semibold tracking-tight text-zinc-50">
+        <p className="mt-1 text-3xl font-semibold tracking-tight text-foreground">
           {value}
         </p>
         {subtitle && (

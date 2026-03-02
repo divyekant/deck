@@ -73,10 +73,10 @@ export function FavoritesBar() {
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
-        <Star className="size-3.5 text-zinc-500" />
-        <span className="text-xs font-medium text-zinc-500">Favorites</span>
+        <Star className="size-3.5 text-muted-foreground" />
+        <span className="text-xs font-medium text-muted-foreground">Favorites</span>
       </div>
-      <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-zinc-700">
+      <div className="flex gap-3 overflow-x-auto pb-1">
         {favorites.map((fav) => {
           const Icon = typeIcon[fav.type]
           return (
@@ -84,12 +84,12 @@ export function FavoritesBar() {
               key={fav.id}
               onClick={() => router.push(targetUrl(fav.type, fav.targetId))}
               className={cn(
-                "group relative flex min-w-[150px] max-w-[180px] shrink-0 items-center gap-2.5 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2.5 text-left transition-colors hover:border-zinc-700 hover:bg-zinc-800/80",
+                "group relative flex min-w-[150px] max-w-[180px] shrink-0 items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-colors hover:bg-accent/50",
                 removing === fav.id && "opacity-50 pointer-events-none"
               )}
             >
-              <Icon className="size-4 shrink-0 text-zinc-500" />
-              <span className="truncate text-sm text-zinc-300">
+              <Icon className="size-4 shrink-0 text-muted-foreground" />
+              <span className="truncate text-sm text-foreground/80">
                 {fav.label}
               </span>
               <span
@@ -101,7 +101,7 @@ export function FavoritesBar() {
                     handleRemove(e as unknown as React.MouseEvent, fav.id)
                   }
                 }}
-                className="absolute -right-1.5 -top-1.5 hidden size-5 items-center justify-center rounded-full border border-zinc-700 bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200 group-hover:flex"
+                className="absolute -right-1.5 -top-1.5 hidden size-5 items-center justify-center rounded-full border bg-card text-muted-foreground hover:bg-accent hover:text-foreground group-hover:flex"
               >
                 <X className="size-3" />
               </span>

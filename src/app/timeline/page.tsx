@@ -156,7 +156,7 @@ export default function TimelinePage() {
           <div className="absolute left-3 top-0 bottom-0 w-px bg-zinc-800" />
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="relative mb-6 flex items-start gap-4">
-              <Skeleton className="absolute left-[-17px] top-1.5 size-2.5 rounded-full" />
+              <Skeleton className="absolute left-[-24.5px] top-1.5 size-2.5 rounded-full" />
               <Skeleton className="h-4 w-16 shrink-0" />
               <div className="flex-1 space-y-2">
                 <Skeleton className="h-4 w-3/4" />
@@ -184,7 +184,7 @@ export default function TimelinePage() {
             <div key={group.key} className="mb-8">
               {/* Day header */}
               <div className="relative mb-4 flex items-baseline gap-3">
-                <div className="absolute left-[-21px] top-1 size-1.5 rounded-full bg-zinc-600" />
+                <div className="absolute left-[-22.5px] top-1 size-1.5 rounded-full bg-zinc-600" />
                 <h2 className="text-sm font-semibold text-zinc-200">
                   {group.label}
                 </h2>
@@ -209,7 +209,7 @@ export default function TimelinePage() {
                       >
                         {/* Dot */}
                         <div
-                          className={`absolute left-[-17px] top-1/2 size-2 -translate-y-1/2 rounded-full ${color.dot}`}
+                          className={`absolute left-[-23.5px] top-1/2 size-2 -translate-y-1/2 rounded-full ${color.dot}`}
                         />
                         {/* Time */}
                         <span className="w-[72px] shrink-0 text-xs tabular-nums text-zinc-500">
@@ -240,7 +240,7 @@ export default function TimelinePage() {
                     >
                       {/* Dot */}
                       <div
-                        className={`absolute left-[-17px] top-4 size-2.5 rounded-full ${color.dot}`}
+                        className={`absolute left-[-24.5px] top-4 size-2.5 rounded-full ${color.dot}`}
                       />
                       {/* Time column */}
                       <span className="w-[72px] shrink-0 pt-0.5 text-xs tabular-nums text-zinc-500">

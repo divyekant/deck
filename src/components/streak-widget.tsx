@@ -61,17 +61,17 @@ export function StreakWidget({ dailyActivity }: StreakWidgetProps) {
     <div className="space-y-4">
       {/* Big streak number */}
       <div className="flex items-baseline gap-2">
-        <span className="text-3xl font-bold text-zinc-100">
+        <span className="text-3xl font-bold text-foreground">
           {currentStreak}
         </span>
-        <span className="text-sm text-zinc-400">days</span>
+        <span className="text-sm text-muted-foreground">days</span>
         {currentStreak > 0 && (
           <Flame className="size-5 text-orange-500" />
         )}
       </div>
 
       {/* Substat */}
-      <p className="text-xs text-zinc-500">
+      <p className="text-xs text-muted-foreground">
         Longest: {longestStreak} days
       </p>
 
@@ -84,8 +84,8 @@ export function StreakWidget({ dailyActivity }: StreakWidgetProps) {
             <div
               key={date}
               className={`size-3 rounded-full ${
-                isActive ? "bg-emerald-500" : "bg-zinc-800"
-              } ${isToday ? "ring-1 ring-zinc-400 ring-offset-1 ring-offset-zinc-900" : ""}`}
+                isActive ? "bg-emerald-500" : "bg-muted"
+              } ${isToday ? "ring-1 ring-ring ring-offset-1 ring-offset-background" : ""}`}
               title={date}
             />
           )

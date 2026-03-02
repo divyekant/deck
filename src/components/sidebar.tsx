@@ -30,10 +30,13 @@ import {
   GitFork,
   Shield,
   FileCheck,
+  Sun,
+  Moon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { useTheme } from "@/components/theme-provider"
 
 const STORAGE_KEY = "deck-sidebar-collapsed"
 
@@ -88,6 +91,7 @@ export const navSections = [
 
 export function Sidebar() {
   const pathname = usePathname()
+  const { theme, toggleTheme } = useTheme()
   const [runningCount, setRunningCount] = useState(0)
   const [collapsed, setCollapsed] = useState(false)
   const [hydrated, setHydrated] = useState(false)
@@ -141,26 +145,35 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "hidden h-screen shrink-0 flex-col border-r border-zinc-800 bg-zinc-950 transition-all duration-200 lg:flex",
+        "hidden h-screen shrink-0 flex-col border-r border-sidebar-border bg-sidebar transition-all duration-200 lg:flex",
         collapsed ? "w-16" : "w-60"
       )}
       // Prevent layout shift before hydration by hiding until ready
       style={hydrated ? undefined : { width: 240 }}
     >
-      {/* Logo + Collapse Toggle */}
+      {/* Logo + Theme + Collapse Toggle */}
       <div className="flex items-center gap-2 px-3 py-5">
         <div className={cn("flex items-center gap-2", collapsed ? "px-1" : "px-2")}>
-          <LayoutDashboard className="size-5 shrink-0 text-zinc-400" />
+          <LayoutDashboard className="size-5 shrink-0 text-muted-foreground" />
           {!collapsed && (
-            <span className="text-lg font-semibold tracking-tight text-zinc-100">
+            <span className="text-lg font-semibold tracking-tight text-sidebar-foreground">
               Deck
             </span>
           )}
         </div>
+        {!collapsed && (
+          <button
+            onClick={toggleTheme}
+            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+          >
+            {theme === "dark" ? <Sun className="size-3.5" /> : <Moon className="size-3.5" />}
+          </button>
+        )}
         <button
           onClick={toggleCollapsed}
           className={cn(
-            "flex size-6 shrink-0 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300",
+            "flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground",
             collapsed ? "ml-auto mr-0" : "ml-auto"
           )}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -173,7 +186,7 @@ export function Sidebar() {
         </button>
       </div>
 
-      <Separator className="bg-zinc-800" />
+      <Separator className="bg-sidebar-border" />
 
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-4">
         {navSections.map((section, sIdx) => (
@@ -201,8 +214,8 @@ export function Sidebar() {
                     "flex items-center rounded-md px-2 py-1.5 text-sm transition-colors",
                     collapsed ? "justify-center" : "gap-2.5",
                     isActive
-                      ? "bg-zinc-800 text-zinc-100"
-                      : "text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200"
+                      ? "bg-sidebar-accent text-sidebar-foreground"
+                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
                   )}
                 >
                   <item.icon className="size-4 shrink-0" />
@@ -240,8 +253,8 @@ export function Sidebar() {
               "flex items-center rounded-md px-2 py-1.5 text-sm transition-colors",
               collapsed ? "justify-center" : "gap-2.5",
               pathname === "/settings"
-                ? "bg-zinc-800 text-zinc-100"
-                : "text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200"
+                ? "bg-sidebar-accent text-sidebar-foreground"
+                : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
             )}
           >
             <Settings className="size-4 shrink-0" />
@@ -255,7 +268,6 @@ export function Sidebar() {
           <Button
             asChild
             size="icon"
-            className="w-full bg-zinc-100 text-zinc-900 hover:bg-zinc-200"
             title="New Session"
           >
             <Link href="/sessions/new">
@@ -263,7 +275,7 @@ export function Sidebar() {
             </Link>
           </Button>
         ) : (
-          <Button asChild className="w-full bg-zinc-100 text-zinc-900 hover:bg-zinc-200">
+          <Button asChild className="w-full">
             <Link href="/sessions/new">
               <Plus className="size-4" />
               New Session

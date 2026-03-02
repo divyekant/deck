@@ -97,8 +97,8 @@ export function CostTrendChart({ data, days: defaultDays }: CostTrendChartProps)
             onClick={() => setSelectedDays(d)}
             className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
               selectedDays === d
-                ? "bg-zinc-700 text-zinc-100"
-                : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800"
+                ? "bg-accent text-foreground"
+                : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
             }`}
           >
             {d}d
@@ -132,7 +132,7 @@ export function CostTrendChart({ data, days: defaultDays }: CostTrendChartProps)
                 y1={tick.y}
                 x2={width - paddingRight}
                 y2={tick.y}
-                stroke="rgb(63, 63, 70)"
+                className="stroke-border"
                 strokeWidth="0.5"
                 strokeDasharray="4 4"
               />
@@ -145,7 +145,7 @@ export function CostTrendChart({ data, days: defaultDays }: CostTrendChartProps)
                 x={paddingLeft - 8}
                 y={tick.y + 3}
                 textAnchor="end"
-                fill="rgb(113, 113, 122)"
+                className="fill-muted-foreground"
                 fontSize="10"
               >
                 ${tick.value.toFixed(tick.value >= 10 ? 0 : 2)}
@@ -177,9 +177,9 @@ export function CostTrendChart({ data, days: defaultDays }: CostTrendChartProps)
                 cy={p.y}
                 r={hoveredIndex === i ? 4 : 2.5}
                 fill={hoveredIndex === i ? "rgb(16, 185, 129)" : "rgb(9, 121, 83)"}
-                stroke="rgb(24, 24, 27)"
+                className="stroke-card"
                 strokeWidth="1.5"
-                className="cursor-pointer"
+                cursor="pointer"
                 onMouseEnter={() => setHoveredIndex(i)}
                 onMouseLeave={() => setHoveredIndex(null)}
               />
@@ -192,7 +192,7 @@ export function CostTrendChart({ data, days: defaultDays }: CostTrendChartProps)
                 x={p.x}
                 y={height - 4}
                 textAnchor="middle"
-                fill="rgb(113, 113, 122)"
+                className="fill-muted-foreground"
                 fontSize="10"
               >
                 {formatDateLabel(p.date)}
@@ -203,14 +203,14 @@ export function CostTrendChart({ data, days: defaultDays }: CostTrendChartProps)
           {/* Tooltip */}
           {hoveredIndex !== null && points[hoveredIndex] && (
             <div
-              className="pointer-events-none absolute z-10 rounded-md border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-xs shadow-lg whitespace-nowrap"
+              className="pointer-events-none absolute z-10 rounded-md border bg-popover px-2.5 py-1.5 text-xs shadow-lg whitespace-nowrap"
               style={{
                 left: `${(points[hoveredIndex].x / width) * 100}%`,
                 top: `${(points[hoveredIndex].y / height) * 100 - 18}%`,
                 transform: "translateX(-50%)",
               }}
             >
-              <p className="font-medium text-zinc-200">
+              <p className="font-medium text-popover-foreground">
                 {formatDateLabel(points[hoveredIndex].date)}
               </p>
               <p className="text-emerald-400">

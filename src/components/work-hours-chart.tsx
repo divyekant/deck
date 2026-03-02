@@ -26,7 +26,7 @@ function reorderHours(data: { hour: number; count: number }[]): { hour: number; 
 }
 
 function getIntensityClass(count: number, max: number): string {
-  if (count === 0) return "bg-zinc-800"
+  if (count === 0) return "bg-muted"
   const ratio = count / max
   if (ratio <= 0.25) return "bg-emerald-900"
   if (ratio <= 0.55) return "bg-emerald-700"
@@ -74,8 +74,8 @@ export function WorkHoursChart({ data }: WorkHoursChartProps) {
 
               {/* Tooltip */}
               {isHovered && (
-                <div className="absolute left-0 -top-8 z-10 rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-xs shadow-lg whitespace-nowrap">
-                  <span className="font-medium text-zinc-200">{formatHour(item.hour)}</span>
+                <div className="absolute left-0 -top-8 z-10 rounded-md border bg-popover px-2 py-1 text-xs shadow-lg whitespace-nowrap">
+                  <span className="font-medium text-popover-foreground">{formatHour(item.hour)}</span>
                   <span className="text-muted-foreground"> — {item.count} session{item.count !== 1 ? "s" : ""}</span>
                 </div>
               )}

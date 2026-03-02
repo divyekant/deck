@@ -42,14 +42,14 @@ export function DailyDigest({ sessions }: DailyDigestProps) {
   // No data
   if (targetSessions.length === 0) {
     return (
-      <Card className="border-zinc-800 bg-zinc-900">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-medium text-zinc-300">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
             Yesterday&apos;s Digest
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-zinc-500">No sessions yesterday.</p>
+          <p className="text-sm text-muted-foreground">No sessions yesterday.</p>
         </CardContent>
       </Card>
     )
@@ -149,31 +149,31 @@ export function DailyDigest({ sessions }: DailyDigestProps) {
     .map(([model, count]) => ({ model, count }))
 
   return (
-    <Card className="border-zinc-800 bg-zinc-900">
+    <Card>
       <CardHeader>
-        <CardTitle className="text-sm font-medium text-zinc-300">
+        <CardTitle className="text-sm font-medium text-muted-foreground">
           {heading}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Natural language summary */}
-        <p className="text-sm text-zinc-400 leading-relaxed">
+        <p className="text-sm text-muted-foreground leading-relaxed">
           You had{" "}
-          <span className="text-zinc-200 font-medium">{sessionCount}</span>{" "}
+          <span className="text-foreground font-medium">{sessionCount}</span>{" "}
           session{sessionCount !== 1 ? "s" : ""} across{" "}
-          <span className="text-zinc-200 font-medium">{projectCount}</span>{" "}
+          <span className="text-foreground font-medium">{projectCount}</span>{" "}
           project{projectCount !== 1 ? "s" : ""}. You spent{" "}
-          <span className="text-zinc-200 font-medium">
+          <span className="text-foreground font-medium">
             {formatCost(totalCost)}
           </span>
           {projectCount > 1 && (
             <>
               , mostly on{" "}
-              <span className="text-zinc-200 font-medium">{topProject}</span>
+              <span className="text-foreground font-medium">{topProject}</span>
             </>
           )}
           . Cache hit rate was{" "}
-          <span className="text-zinc-200 font-medium">
+          <span className="text-foreground font-medium">
             {cacheHitRate.toFixed(0)}%
           </span>
           .
@@ -195,7 +195,7 @@ export function DailyDigest({ sessions }: DailyDigestProps) {
 
         {/* Expandable details */}
         <details className="group">
-          <summary className="cursor-pointer text-xs font-medium text-zinc-500 hover:text-zinc-400 transition-colors list-none flex items-center gap-1">
+          <summary className="cursor-pointer text-xs font-medium text-muted-foreground hover:text-foreground transition-colors list-none flex items-center gap-1">
             <svg
               className="size-3 transition-transform group-open:rotate-90"
               fill="none"
@@ -215,7 +215,7 @@ export function DailyDigest({ sessions }: DailyDigestProps) {
           <div className="mt-3 space-y-3 text-sm">
             {/* Projects */}
             <div>
-              <p className="text-xs font-medium text-zinc-500 mb-1.5">
+              <p className="text-xs font-medium text-muted-foreground mb-1.5">
                 Projects
               </p>
               <div className="space-y-1">
@@ -224,10 +224,10 @@ export function DailyDigest({ sessions }: DailyDigestProps) {
                   .map(([project, count]) => (
                     <div
                       key={project}
-                      className="flex items-center justify-between text-zinc-400"
+                      className="flex items-center justify-between text-foreground/70"
                     >
                       <span>{project}</span>
-                      <span className="text-zinc-500">
+                      <span className="text-muted-foreground">
                         {count} session{count !== 1 ? "s" : ""}
                       </span>
                     </div>
@@ -237,15 +237,15 @@ export function DailyDigest({ sessions }: DailyDigestProps) {
 
             {/* Models */}
             <div>
-              <p className="text-xs font-medium text-zinc-500 mb-1.5">Models</p>
+              <p className="text-xs font-medium text-muted-foreground mb-1.5">Models</p>
               <div className="space-y-1">
                 {modelBreakdown.map(({ model, count }) => (
                   <div
                     key={model}
-                    className="flex items-center justify-between text-zinc-400"
+                    className="flex items-center justify-between text-foreground/70"
                   >
                     <span>{model}</span>
-                    <span className="text-zinc-500">
+                    <span className="text-muted-foreground">
                       {count} session{count !== 1 ? "s" : ""}
                     </span>
                   </div>
@@ -256,10 +256,10 @@ export function DailyDigest({ sessions }: DailyDigestProps) {
             {/* Longest session */}
             {longestSession && (
               <div>
-                <p className="text-xs font-medium text-zinc-500 mb-1">
+                <p className="text-xs font-medium text-muted-foreground mb-1">
                   Longest Session
                 </p>
-                <p className="text-zinc-400">
+                <p className="text-foreground/70">
                   {longestSession.projectName} &mdash;{" "}
                   {formatDuration(longestSession.duration)}
                 </p>
@@ -268,10 +268,10 @@ export function DailyDigest({ sessions }: DailyDigestProps) {
 
             {/* Total duration */}
             <div>
-              <p className="text-xs font-medium text-zinc-500 mb-1">
+              <p className="text-xs font-medium text-muted-foreground mb-1">
                 Total Duration
               </p>
-              <p className="text-zinc-400">{formatDuration(totalDuration)}</p>
+              <p className="text-foreground/70">{formatDuration(totalDuration)}</p>
             </div>
           </div>
         </details>
