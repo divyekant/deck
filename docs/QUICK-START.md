@@ -14,40 +14,46 @@ git clone https://github.com/divyekant/deck.git
 cd deck
 ```
 
-### 2. Configure volume mounts
+### 2. Configure environment and volume mounts
 
-Open `docker-compose.yml` and adjust the Projects volume mount to match your local projects path:
+Open `docker-compose.yml` and adjust two things:
+
+**a) Projects volume mount** — change the path to match your setup:
 
 ```yaml
-services:
-  deck:
-    build: .
-    container_name: deck
-    ports:
-      - "3001:3001"
-    volumes:
-      - ~/.claude:/home/node/.claude:ro
-      - ~/.codex:/home/node/.codex:ro
-      - ~/.deck:/home/node/.deck
-      - ~/Projects:/Users/divyekant/Projects:ro   # <-- CHANGE THIS
-    environment:
-      - HOME=/home/node
-    restart: unless-stopped
+volumes:
+  - ~/.claude:/home/node/.claude
+  - ~/.claude.json:/home/node/.claude.json
+  - ~/.codex:/home/node/.codex:ro
+  - ~/.deck:/home/node/.deck
+  - ~/Projects:/Users/yourname/Projects:ro   # <-- CHANGE THIS
 ```
 
-**IMPORTANT:** You must change the Projects volume mount to match your own setup. The left side is the path on your host machine. The right side is where it appears inside the container -- this must match the absolute path that Claude Code recorded in your session files.
+The left side is your host path, the right side must match the absolute path Claude Code recorded in session files.
 
 Examples:
 
 ```yaml
-# macOS -- your projects are in ~/Projects, Claude Code recorded paths as /Users/yourname/Projects
+# macOS
 - ~/Projects:/Users/yourname/Projects:ro
 
-# Linux -- your projects are in ~/projects, Claude Code recorded paths as /home/yourname/projects
+# Linux
 - ~/projects:/home/yourname/projects:ro
 ```
 
-The `:ro` suffix mounts the directory as read-only. Deck only reads project files; it does not modify them.
+**b) API key for session launching** (optional) — if you want to launch new Claude Code sessions from the Docker container, set your Anthropic API key:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Or create a `.env` file in the project root:
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Without an API key, Deck works fully for viewing sessions, analytics, and all dashboard features. The API key is only needed for the "New Session" launcher.
 
 ### 3. Start the container
 
@@ -114,7 +120,12 @@ If this returns nothing, the volume mount is misconfigured. Check that `~/.claud
 
 ### Docker: session launching fails
 
-Session launching requires the project directory to be mounted inside the container at the same absolute path that Claude Code recorded. If you see path-related errors when launching a session, check that your Projects volume mount maps to the correct container path.
+Session launching requires two things:
+
+1. **An API key** — set `ANTHROPIC_API_KEY` in your environment or `.env` file. OAuth login from the host cannot be shared with the container.
+2. **Project paths mounted correctly** — the project directory must be mounted at the same absolute path that Claude Code recorded in your session files.
+
+If you see "Not logged in" errors, you need to set the API key. If you see path-related errors, check your Projects volume mount.
 
 ### Port conflict
 

@@ -241,7 +241,7 @@ export default function SessionDetailPage() {
       const res = await fetch("/api/sessions/resume", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId: id, prompt: resumePrompt.trim() }),
+        body: JSON.stringify({ sessionId: id, prompt: resumePrompt.trim(), projectDir: session?.meta.projectPath }),
       })
 
       if (!res.ok) {

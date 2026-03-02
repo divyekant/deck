@@ -1,7 +1,7 @@
 import { spawn, ChildProcess } from "child_process";
 import { randomUUID } from "crypto";
-
 import { execSync } from "child_process";
+import { getAuthEnv } from "../auth";
 
 export type CliTool = "claude" | "codex";
 
@@ -50,7 +50,7 @@ interface RunningSession {
 // Module-level store of running sessions
 const runningSessions = new Map<string, RunningSession>();
 
-function spawnClaudeProcess(opts: {
+async function spawnClaudeProcess(opts: {
   id: string;
   args: string[];
   cwd?: string;
@@ -58,7 +58,7 @@ function spawnClaudeProcess(opts: {
   projectDir?: string;
   model?: string;
   cli?: CliTool;
-}): { error?: string } {
+}): Promise<{ error?: string }> {
   const binary = opts.cli === "codex" ? "codex" : "claude";
 
   if (!isCliAvailable(binary)) {
@@ -67,12 +67,19 @@ function spawnClaudeProcess(opts: {
     };
   }
 
+  // Get auth env vars from settings (API key or OAuth token)
+  const authEnv = await getAuthEnv();
+
+  // Build clean env: strip CLAUDECODE to avoid "cannot launch inside another CC session"
+  const { CLAUDECODE: _, ...cleanEnv } = process.env;
+  const spawnEnv = { ...cleanEnv, PATH: CLI_PATH, ...authEnv };
+
   let proc: ChildProcess;
   try {
     proc = spawn(binary, opts.args, {
       cwd: opts.cwd || undefined,
       stdio: ["pipe", "pipe", "pipe"],
-      env: { ...process.env, PATH: CLI_PATH },
+      env: spawnEnv,
     });
   } catch (err) {
     return {
@@ -180,12 +187,12 @@ function spawnClaudeProcess(opts: {
   return {};
 }
 
-export function startSession(opts: {
+export async function startSession(opts: {
   projectDir: string;
   model: string;
   prompt: string;
   cli?: CliTool;
-}): { id: string; error?: string } {
+}): Promise<{ id: string; error?: string }> {
   const id = randomUUID();
   const cli = opts.cli || "claude";
 
@@ -203,6 +210,7 @@ export function startSession(opts: {
   } else {
     args = [
       "-p",
+      "--verbose",
       "--output-format=stream-json",
       "--include-partial-messages",
       "--model",
@@ -212,7 +220,7 @@ export function startSession(opts: {
     ];
   }
 
-  const result = spawnClaudeProcess({
+  const result = await spawnClaudeProcess({
     id,
     args,
     cwd: opts.projectDir,
@@ -229,24 +237,28 @@ export function startSession(opts: {
   return { id };
 }
 
-export function resumeSession(opts: {
+export async function resumeSession(opts: {
   sessionId: string;
   prompt: string;
-}): { id: string; error?: string } {
-  const { sessionId, prompt } = opts;
+  projectDir?: string;
+}): Promise<{ id: string; error?: string }> {
+  const { sessionId, prompt, projectDir } = opts;
 
   const args = [
     "--resume",
     sessionId,
     "-p",
+    "--verbose",
     "--output-format=stream-json",
     "--include-partial-messages",
   ];
 
-  const result = spawnClaudeProcess({
+  const result = await spawnClaudeProcess({
     id: sessionId,
     args,
+    cwd: projectDir || undefined,
     prompt,
+    projectDir,
   });
 
   if (result.error) {

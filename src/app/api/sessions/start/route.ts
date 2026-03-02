@@ -58,7 +58,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = startSession({
+    const result = await startSession({
       projectDir: projectDir.trim(),
       model: model.trim(),
       prompt: prompt.trim(),

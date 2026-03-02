@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Settings as SettingsIcon, Check, Sparkles, Code2, ExternalLink } from "lucide-react"
+import { Settings as SettingsIcon, Check, Sparkles, Code2, ExternalLink, Key, Shield, Eye, EyeOff } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select"
 
 const changelog = [
+  { version: "v2.6", title: "Session Auth & Resume", features: ["Auth token settings (API key + OAuth)", "Multi-turn session resume", "CLAUDECODE env isolation", "Docker auth passthrough"] },
   { version: "v2.5", title: "Health Depth", features: ["Worktrees browser", "Env scanner", "Config lint", "Diagnose with Claude", "Dependency graph", "Repo drill-down"] },
   { version: "v2.4", title: "Session Replay", features: ["Timeline scrubber with event markers", "Files panel sidebar", "Draggable playhead with keyboard nav"] },
   { version: "v2.3", title: "Health Section", features: ["Project hygiene scoring", "Dependencies viewer", "Version mismatch detection"] },
@@ -45,15 +46,22 @@ interface DeckSettings {
   budget: number
   budgetResetDay: number
   theme: "dark" | "light"
+  authToken: string
+  authType: "none" | "api_key" | "oauth"
 }
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<DeckSettings | null>(null)
   const [budget, setBudget] = useState("")
   const [resetDay, setResetDay] = useState("1")
+  const [authToken, setAuthToken] = useState("")
+  const [showToken, setShowToken] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [savingAuth, setSavingAuth] = useState(false)
+  const [savedAuth, setSavedAuth] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [authError, setAuthError] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -64,6 +72,7 @@ export default function SettingsPage() {
         setSettings(data)
         setBudget(String(data.budget))
         setResetDay(String(data.budgetResetDay))
+        setAuthToken(data.authToken || "")
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load settings")
       }
@@ -96,6 +105,35 @@ export default function SettingsPage() {
     } finally {
       setSaving(false)
     }
+  }
+
+  async function handleSaveAuth() {
+    setSavingAuth(true)
+    setSavedAuth(false)
+    setAuthError(null)
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ authToken: authToken.trim() }),
+      })
+      if (!res.ok) throw new Error("Failed to save auth settings")
+      const data: DeckSettings = await res.json()
+      setSettings(data)
+      setAuthToken(data.authToken || "")
+      setSavedAuth(true)
+      setTimeout(() => setSavedAuth(false), 2000)
+    } catch (err) {
+      setAuthError(err instanceof Error ? err.message : "Failed to save")
+    } finally {
+      setSavingAuth(false)
+    }
+  }
+
+  function detectTokenType(token: string): string {
+    if (!token.trim()) return "none"
+    if (token.startsWith("sk-ant-oat01-")) return "oauth"
+    return "api_key"
   }
 
   if (error && !settings) {
@@ -197,13 +235,83 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      {/* Authentication */}
+      <Card className="max-w-lg border-zinc-800 bg-zinc-900">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-sm font-medium text-zinc-300">
+            <Key className="size-3.5" />
+            Authentication
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-1.5">
+            <label htmlFor="authToken" className="text-xs font-medium text-muted-foreground">
+              Anthropic API Key or OAuth Token
+            </label>
+            <div className="relative">
+              <Input
+                id="authToken"
+                type={showToken ? "text" : "password"}
+                value={authToken}
+                onChange={(e) => setAuthToken(e.target.value)}
+                className="border-zinc-700 bg-zinc-800 pr-10 font-mono text-xs text-zinc-100 focus-visible:border-zinc-600 focus-visible:ring-zinc-700/50"
+                placeholder="sk-ant-api03-... or sk-ant-oat01-..."
+              />
+              <button
+                type="button"
+                onClick={() => setShowToken(!showToken)}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
+              >
+                {showToken ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+              </button>
+            </div>
+            {authToken.trim() && (
+              <div className="flex items-center gap-1.5 pt-0.5">
+                <Shield className="size-3 text-zinc-500" />
+                <span className="text-[10px] text-zinc-500">
+                  Detected:{" "}
+                  <span className={detectTokenType(authToken) === "oauth" ? "text-violet-400" : "text-emerald-400"}>
+                    {detectTokenType(authToken) === "oauth" ? "OAuth Subscription Token" : "API Key"}
+                  </span>
+                </span>
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Required for launching sessions from Docker. Get your key from{" "}
+              <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" className="text-zinc-400 underline hover:text-zinc-200">
+                console.anthropic.com
+              </a>
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 pt-1">
+            <Button
+              onClick={handleSaveAuth}
+              disabled={savingAuth}
+              className="bg-zinc-100 text-zinc-900 hover:bg-zinc-200"
+            >
+              {savingAuth ? "Saving..." : "Save"}
+            </Button>
+            {savedAuth && (
+              <span className="flex items-center gap-1 text-xs text-emerald-400">
+                <Check className="size-3.5" />
+                Saved
+              </span>
+            )}
+            {authError && (
+              <span className="text-xs text-red-400">{authError}</span>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* About */}
       <div className="max-w-lg space-y-4">
         <div className="flex items-center gap-2.5">
           <Sparkles className="h-4 w-4 text-zinc-400" />
           <h2 className="text-sm font-medium text-zinc-300">About Deck</h2>
           <span className="inline-flex items-center rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] font-medium text-zinc-400">
-            v2.5
+            v2.6
           </span>
         </div>
         <p className="text-xs leading-relaxed text-zinc-500">

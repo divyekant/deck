@@ -5,10 +5,12 @@ services:
     ports:
       - "3001:3001"
     volumes:
-      - ~/.claude:/home/node/.claude:ro
+      - ~/.claude:/home/node/.claude
+      - ~/.claude.json:/home/node/.claude.json
       - ~/.codex:/home/node/.codex:ro
       - ~/.deck:/home/node/.deck
       - ~/Projects:/Users/divyekant/Projects:ro
     environment:
       - HOME=/home/node
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
     restart: unless-stopped

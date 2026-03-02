@@ -2,6 +2,25 @@
 
 All notable changes to Deck will be documented in this file.
 
+## [2.6.0] - 2026-03-01
+
+### Added
+- Authentication settings: save Anthropic API key or OAuth token in Settings UI
+- Auto-detect token type (API key vs OAuth subscription) with visual badge
+- Auth token passthrough to CLI via environment variables (ANTHROPIC_API_KEY / ANTHROPIC_AUTH_TOKEN)
+- Multi-turn session resume with correct project directory context
+- CLAUDECODE env var isolation to prevent nested-session errors
+
+### Fixed
+- Session launch: added required --verbose flag for stream-json output
+- Session resume: pass projectDir as cwd so Claude CLI finds session files
+- Docker: writable .claude mount, .claude.json mount, ANTHROPIC_API_KEY env passthrough
+
+### Changed
+- spawnClaudeProcess is now async (auth env lookup)
+- Docker compose: .claude and .claude.json mounts now read-write
+- Quick Start docs updated with authentication setup instructions
+
 ## [2.5.0] - 2026-03-01
 
 ### Added

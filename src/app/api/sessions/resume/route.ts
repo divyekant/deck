@@ -6,7 +6,7 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { sessionId, prompt } = body;
+    const { sessionId, prompt, projectDir } = body;
 
     // Validate sessionId
     if (!sessionId || typeof sessionId !== "string") {
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = resumeSession({ sessionId, prompt: prompt.trim() });
+    const result = await resumeSession({ sessionId, prompt: prompt.trim(), projectDir });
 
     if (result.error) {
       return NextResponse.json(
