@@ -2,6 +2,28 @@
 
 All notable changes to Deck will be documented in this file.
 
+## [2.8.0] - 2026-03-03
+
+### Added
+- Session Workspace page (`/workspace`) — terminal multiplexer-style session management
+- Multi-turn sessions: same CLI process stays alive, follow-ups via stdin
+- SessionPanel sidebar with active/recent sessions and status indicators
+- DirectoryPicker with filesystem browse API and recent directories
+- Per-project workspace preferences (CLI, model, options remembered per directory)
+- Session options drawer: skip permissions, remote control, Chrome MCP, max turns, system prompt, additional flags
+- `POST /api/sessions/{id}/message` endpoint for multi-turn follow-ups
+- `GET /api/filesystem/browse` endpoint for directory picker
+- SSE stream stays open across turns with idle signal
+- Idle timeout (30min) with restart-with-same-settings for recent sessions
+
+### Changed
+- Sidebar nav: Workspace replaces New Session
+- `/sessions/new` redirects to `/workspace`
+
+### Fixed
+- Docker deployment: auth passthrough, tilde path expansion, stdin EOF handling, SSE flush
+- Security hardening, error handling improvements, memory leak fix
+
 ## [2.7.0] - 2026-03-01
 
 ### Added
