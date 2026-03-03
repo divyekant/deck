@@ -165,8 +165,8 @@ export function DetailDrawer({
 
   if (!open) return null
 
-  const truncateId = (id: string) =>
-    id.length > 12 ? `${id.slice(0, 8)}...` : id
+  const truncateId = (id?: string) =>
+    !id ? "—" : id.length > 12 ? `${id.slice(0, 8)}...` : id
 
   const formatDuration = (ms?: number) => {
     if (!ms) return "—"
@@ -290,7 +290,7 @@ export function DetailDrawer({
           )}
 
           {/* Context Window */}
-          {messages.length > 0 && (
+          {messages && messages.length > 0 && (
             <section>
               <div className="flex items-center gap-1.5 mb-2">
                 <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">

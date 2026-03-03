@@ -328,7 +328,19 @@ export default function WorkspacePage() {
             setMessagesBySession((prev) => ({ ...prev, [id]: data.messages }))
           }
           if (data.meta) {
-            setSelectedSessionMeta(data.meta)
+            // Map API field names to DetailDrawer's SessionMeta interface
+            const m = data.meta
+            setSelectedSessionMeta({
+              sessionId: m.id || id,
+              startedAt: m.startTime || "",
+              duration: m.duration,
+              model: m.model || "",
+              cli: m.source || "",
+              totalCost: m.estimatedCost,
+              inputTokens: m.totalInputTokens,
+              outputTokens: m.totalOutputTokens,
+              cacheReadTokens: m.cacheReadTokens,
+            })
           }
         } catch {
           // silent
@@ -418,11 +430,11 @@ export default function WorkspacePage() {
       .then((data) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const mapped = (data.sessions || []).map((s: any) => ({
-          id: s.meta?.sessionId || s.id,
-          projectDir: s.meta?.projectDir || "",
-          model: s.meta?.model || "",
-          prompt: s.messages?.[0]?.content || "",
-          startedAt: s.meta?.startedAt || "",
+          id: s.id,
+          projectDir: s.projectPath || "",
+          model: s.model || "",
+          prompt: s.firstPrompt || "",
+          startedAt: s.startTime || "",
         }))
         setHistorySessions((prev) =>
           historyPage === 0 ? mapped : [...prev, ...mapped]
