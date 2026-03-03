@@ -30,6 +30,7 @@ import {
   GitFork,
   Shield,
   FileCheck,
+  Terminal,
   Sun,
   Moon,
 } from "lucide-react"
@@ -50,6 +51,7 @@ export const navSections = [
   {
     label: "Monitor",
     items: [
+      { name: "Workspace", href: "/workspace", icon: Terminal },
       { name: "Live", href: "/live", icon: Radio, showRunning: true },
       { name: "Sessions", href: "/sessions", icon: MessageSquare },
       { name: "Costs", href: "/costs", icon: DollarSign },
@@ -270,13 +272,13 @@ export function Sidebar() {
             size="icon"
             title="New Session"
           >
-            <Link href="/sessions/new">
+            <Link href="/workspace">
               <Plus className="size-4" />
             </Link>
           </Button>
         ) : (
           <Button asChild className="w-full">
-            <Link href="/sessions/new">
+            <Link href="/workspace">
               <Plus className="size-4" />
               New Session
             </Link>

@@ -5,7 +5,6 @@ import { useParams } from "next/navigation"
 import Link from "next/link"
 import {
   ArrowLeft,
-  Play,
   Square,
   Loader2,
   Zap,
@@ -471,13 +470,10 @@ export default function SessionDetailPage() {
           {!isResumeActive && !showResume && (
             <div className="ml-auto flex items-center gap-2">
               <ExportButton sessionId={id} />
-              <Button
-                size="sm"
-                onClick={() => setShowResume(true)}
-                className="gap-1.5 bg-emerald-600 text-white hover:bg-emerald-500"
-              >
-                <Play className="size-3.5" />
-                Continue
+              <Button asChild variant="outline" size="sm">
+                <Link href={`/workspace?session=${id}`}>
+                  Continue
+                </Link>
               </Button>
             </div>
           )}
