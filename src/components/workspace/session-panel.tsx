@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Plus, X } from "lucide-react"
+import { Plus, X, RotateCw } from "lucide-react"
 
 export interface WorkspaceSession {
   id: string
@@ -20,6 +20,7 @@ interface SessionPanelProps {
   onSelect: (id: string) => void
   onClose: (id: string) => void
   onNewSession: () => void
+  onRestart?: (session: WorkspaceSession) => void
 }
 
 export function SessionPanel({
@@ -28,6 +29,7 @@ export function SessionPanel({
   onSelect,
   onClose,
   onNewSession,
+  onRestart,
 }: SessionPanelProps) {
   const active = sessions.filter((s) => s.status === "running" || s.status === "idle")
   const recent = sessions.filter((s) => s.status === "done" || s.status === "error")
@@ -101,7 +103,7 @@ export function SessionPanel({
                 key={s.id}
                 onClick={() => onSelect(s.id)}
                 className={cn(
-                  "mt-1 flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors",
+                  "group mt-1 flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors",
                   selectedId === s.id
                     ? "bg-accent text-accent-foreground"
                     : "hover:bg-accent/50"
@@ -112,6 +114,15 @@ export function SessionPanel({
                   <div className="truncate font-medium">{projectName(s.projectDir)}</div>
                   <div className="truncate text-xs text-muted-foreground">{s.model}</div>
                 </div>
+                {onRestart && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onRestart(s); }}
+                    className="hidden shrink-0 rounded p-0.5 hover:bg-accent group-hover:block"
+                    title="Restart with same settings"
+                  >
+                    <RotateCw className="size-3" />
+                  </button>
+                )}
               </button>
             ))}
           </div>

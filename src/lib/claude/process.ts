@@ -33,6 +33,8 @@ function isCliAvailable(binary: string): boolean {
   }
 }
 
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+
 interface RunningSession {
   id: string;
   process: ChildProcess;
@@ -45,12 +47,22 @@ interface RunningSession {
   exited: boolean;
   idle: boolean; // true when waiting for user input
   cli: CliTool;
+  idleTimer: ReturnType<typeof setTimeout> | null;
   listeners: Set<(line: string) => void>;
   exitListeners: Set<(code: number | null) => void>;
 }
 
 // Module-level store of running sessions
 const runningSessions = new Map<string, RunningSession>();
+
+function resetIdleTimer(session: RunningSession) {
+  if (session.idleTimer) clearTimeout(session.idleTimer);
+  session.idleTimer = setTimeout(() => {
+    if (!session.exited && session.idle) {
+      session.process.kill("SIGTERM");
+    }
+  }, IDLE_TIMEOUT_MS);
+}
 
 async function spawnClaudeProcess(opts: {
   id: string;
@@ -100,6 +112,7 @@ async function spawnClaudeProcess(opts: {
     exitCode: null,
     exited: false,
     idle: false,
+    idleTimer: null,
     cli: opts.cli || "claude",
     listeners: new Set(),
     exitListeners: new Set(),
@@ -134,6 +147,7 @@ async function spawnClaudeProcess(opts: {
           const parsed = JSON.parse(trimmed);
           if (parsed.type === "result") {
             session.idle = true;
+            resetIdleTimer(session);
           }
         } catch {
           // Not JSON — ignore
@@ -160,6 +174,7 @@ async function spawnClaudeProcess(opts: {
   });
 
   proc.on("close", (code) => {
+    if (session.idleTimer) clearTimeout(session.idleTimer);
     // Flush any remaining buffer
     if (buffer.trim()) {
       session.output.push(buffer.trim());
@@ -321,6 +336,7 @@ export function sendMessage(id: string, prompt: string): { error?: string } {
   if (!session.process.stdin?.writable) return { error: "Session stdin not writable" };
 
   session.idle = false;
+  if (session.idleTimer) clearTimeout(session.idleTimer);
   session.process.stdin.write(prompt + "\n");
   return {};
 }

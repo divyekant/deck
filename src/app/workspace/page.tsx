@@ -403,6 +403,20 @@ export default function WorkspacePage() {
           setShowNewForm(true)
           setSelectedId(null)
         }}
+        onRestart={(s) => {
+          setProjectDir(s.projectDir)
+          const prefs = getProjectPrefs(s.projectDir)
+          setCli(prefs.cli)
+          setModel(prefs.model)
+          setSkipPermissions(prefs.skipPermissions)
+          setRemoteControl(prefs.remoteControl)
+          setChromeMcp(prefs.chromeMcp)
+          setMaxTurns(prefs.maxTurns)
+          setSystemPrompt(prefs.systemPrompt)
+          setAdditionalFlags(prefs.additionalFlags)
+          setShowNewForm(true)
+          setSelectedId(null)
+        }}
       />
 
       {/* Main content area */}
