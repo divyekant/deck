@@ -281,12 +281,15 @@ export default function WorkspacePage() {
         )
       )
       setFollowUp("")
+
+      // Reconnect the stream to receive the follow-up response
+      connectStream(selectedId)
     } catch (err) {
       setSendError(err instanceof Error ? err.message : "Failed to send follow-up")
     } finally {
       setSending(false)
     }
-  }, [selectedId, followUp])
+  }, [selectedId, followUp, connectStream])
 
   const handleCloseSession = useCallback(
     async (id: string) => {
@@ -541,7 +544,7 @@ export default function WorkspacePage() {
   // --- Main render ---
 
   return (
-    <div className="flex h-[calc(100vh-theme(spacing.12))] -m-6">
+    <div className="flex h-[calc(100vh-theme(spacing.12))] -m-6 overflow-hidden">
       {/* Left session panel */}
       <SessionPanel
         sessions={sessions}
@@ -860,7 +863,7 @@ export default function WorkspacePage() {
         {displaySession && (
           <>
             {/* Message stream */}
-            <ScrollArea className="flex-1 p-4">
+            <ScrollArea className="flex-1 min-h-0 p-4">
               <div className="space-y-1 pb-4">
                 {renderMessages()}
 
@@ -874,20 +877,10 @@ export default function WorkspacePage() {
                     </div>
                   )}
 
-                {!replayMode && (displaySession.status === "done" ||
-                  displaySession.status === "error") && (
-                  <div
-                    className={cn(
-                      "mt-4 rounded-md border px-4 py-3",
-                      displaySession.status === "done"
-                        ? "border-zinc-800 bg-zinc-900/50"
-                        : "border-red-900 bg-red-950/50"
-                    )}
-                  >
+                {!replayMode && displaySession.status === "error" && (
+                  <div className="mt-4 rounded-md border border-red-900 bg-red-950/50 px-4 py-3">
                     <span className="text-sm font-medium">
-                      {displaySession.status === "done"
-                        ? "Session complete"
-                        : "Session ended with error"}
+                      Session ended with error
                     </span>
                   </div>
                 )}
@@ -912,7 +905,8 @@ export default function WorkspacePage() {
                 }}
               />
             ) : (displaySession.status === "running" ||
-              displaySession.status === "idle") ? (
+              displaySession.status === "idle" ||
+              displaySession.status === "done") ? (
               <div className="border-t border-border p-3">
                 {sendError && (
                   <div className="mb-2 rounded-md border border-red-900 bg-red-950/50 px-3 py-1.5">
@@ -926,7 +920,7 @@ export default function WorkspacePage() {
                     placeholder={
                       displaySession.status === "running"
                         ? "Waiting for response..."
-                        : "Send a follow-up..."
+                        : "Continue the conversation..."
                     }
                     rows={2}
                     className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring resize-none disabled:opacity-50"
