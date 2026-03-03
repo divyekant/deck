@@ -363,7 +363,7 @@ function SessionsContent() {
         if (!res.ok) return
         const data = await res.json()
         setAnnotations(data.annotations ?? {})
-        setAllTags(data.allTags ?? [])
+        setAllTags((data.allTags ?? []).filter(Boolean))
       } catch {
         // Annotations are non-critical, fail silently
       }
@@ -438,7 +438,7 @@ function SessionsContent() {
       if (res.ok) {
         const data = await res.json()
         setAnnotations(data.annotations ?? {})
-        setAllTags(data.allTags ?? [])
+        setAllTags((data.allTags ?? []).filter(Boolean))
       }
     } catch { /* fail silently */ }
   }, [selectedIds, annotations])
@@ -518,11 +518,11 @@ function SessionsContent() {
 
   // Unique projects and models for filter dropdowns
   const projects = useMemo(
-    () => Array.from(new Set(sessions.map((s) => s.projectName))).sort(),
+    () => Array.from(new Set(sessions.map((s) => s.projectName))).filter(Boolean).sort(),
     [sessions]
   )
   const models = useMemo(
-    () => Array.from(new Set(sessions.map((s) => s.model))).sort(),
+    () => Array.from(new Set(sessions.map((s) => s.model))).filter(Boolean).sort(),
     [sessions]
   )
 
