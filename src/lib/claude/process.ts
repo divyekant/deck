@@ -208,6 +208,11 @@ export async function startSession(opts: {
   model: string;
   prompt: string;
   cli?: CliTool;
+  skipPermissions?: boolean;
+  remoteControl?: boolean;
+  maxTurns?: number;
+  systemPrompt?: string;
+  additionalFlags?: string[];
 }): Promise<{ id: string; error?: string }> {
   const id = randomUUID();
   const cli = opts.cli || "claude";
@@ -234,6 +239,11 @@ export async function startSession(opts: {
       "--session-id",
       id,
     ];
+    if (opts.skipPermissions) args.push("--dangerously-skip-permissions");
+    if (opts.remoteControl) args.push("--enable-remote-control");
+    if (opts.maxTurns) args.push("--max-turns", String(opts.maxTurns));
+    if (opts.systemPrompt) args.push("--system-prompt", opts.systemPrompt);
+    if (opts.additionalFlags) args.push(...opts.additionalFlags);
   }
 
   const result = await spawnClaudeProcess({

@@ -15,7 +15,7 @@ const ALLOWED_CLIS: CliTool[] = ["claude", "codex"];
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { projectDir, model, prompt, cli: rawCli } = body;
+    const { projectDir, model, prompt, cli: rawCli, skipPermissions, remoteControl, maxTurns, systemPrompt, additionalFlags } = body;
     const cli: CliTool = ALLOWED_CLIS.includes(rawCli) ? rawCli : "claude";
 
     // Validate projectDir
@@ -63,6 +63,11 @@ export async function POST(request: Request) {
       model: model.trim(),
       prompt: prompt.trim(),
       cli,
+      skipPermissions: !!skipPermissions,
+      remoteControl: !!remoteControl,
+      maxTurns: maxTurns ? Number(maxTurns) : undefined,
+      systemPrompt: systemPrompt || undefined,
+      additionalFlags: additionalFlags ? String(additionalFlags).split(/\s+/).filter(Boolean) : undefined,
     });
 
     if (result.error) {
