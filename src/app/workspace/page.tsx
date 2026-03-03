@@ -398,9 +398,15 @@ export default function WorkspacePage() {
     }
   }, [connectStream, handleSelectSession])
 
-  // Auto-scroll messages
+  // Auto-scroll messages — scroll the ScrollArea viewport directly
+  // instead of scrollIntoView which scrolls ALL ancestor containers
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    const el = messagesEndRef.current
+    if (!el) return
+    const viewport = el.closest("[data-radix-scroll-area-viewport]")
+    if (viewport) {
+      viewport.scrollTop = viewport.scrollHeight
+    }
   }, [messages])
 
   // Replay playback timer
