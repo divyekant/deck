@@ -51,16 +51,30 @@ export async function GET(
         send(line);
       }
 
-      // If already exited, send done and close
+      // If truly exited (not just idle), send done and close
       if (s.exited) {
         send(JSON.stringify({ type: "done", exitCode: s.exitCode }));
         cleanup();
         return;
       }
 
+      // If session is idle (waiting for next prompt), signal it
+      if (s.idle) {
+        send(JSON.stringify({ type: "idle" }));
+      }
+
       // Subscribe to new lines
       function onLine(line: string) {
         send(line);
+        // Detect idle: if this is a result message, send idle signal
+        try {
+          const parsed = JSON.parse(line);
+          if (parsed.type === "result") {
+            send(JSON.stringify({ type: "idle" }));
+          }
+        } catch {
+          // not JSON, skip idle detection
+        }
       }
 
       function onExit(code: number | null) {
