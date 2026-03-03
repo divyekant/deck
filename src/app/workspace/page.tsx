@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
-import { SessionPanel, type WorkspaceSession } from "@/components/workspace/session-panel"
+import { SessionPanel, type WorkspaceSession, type HistorySession } from "@/components/workspace/session-panel"
+import { DetailDrawer } from "@/components/workspace/detail-drawer"
 import { DirectoryPicker } from "@/components/workspace/directory-picker"
 import { getProjectPrefs, saveProjectPrefs } from "@/lib/workspace-prefs"
 import { MessageView } from "@/components/message-view"
@@ -10,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
-import { Settings, Terminal, Loader2 } from "lucide-react"
+import { Settings, Terminal, Loader2, PanelRight } from "lucide-react"
 
 interface StreamMessage {
   type: string
@@ -25,6 +26,15 @@ export default function WorkspacePage() {
   const [sessions, setSessions] = useState<WorkspaceSession[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [showNewForm, setShowNewForm] = useState(false)
+
+  // Detail drawer & history
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [historySessions, setHistorySessions] = useState<HistorySession[]>([])
+  const [historyPage, setHistoryPage] = useState(0)
+  const [historyHasMore, setHistoryHasMore] = useState(true)
+  const [searchQuery, setSearchQuery] = useState("")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [selectedSessionMeta, setSelectedSessionMeta] = useState<any>(null)
 
   // Per-session messages (keyed by session ID)
   const [messagesBySession, setMessagesBySession] = useState<Record<string, StreamMessage[]>>({})
@@ -275,12 +285,28 @@ export default function WorkspacePage() {
   )
 
   const handleSelectSession = useCallback(
-    (id: string) => {
+    async (id: string) => {
       setSelectedId(id)
       setShowNewForm(false)
       setSendError(null)
+      // If not an active session, load from API
+      const isActive = sessions.some((s) => s.id === id)
+      if (!isActive) {
+        try {
+          const res = await fetch(`/api/sessions/${id}`)
+          const data = await res.json()
+          if (data.messages) {
+            setMessagesBySession((prev) => ({ ...prev, [id]: data.messages }))
+          }
+          if (data.meta) {
+            setSelectedSessionMeta(data.meta)
+          }
+        } catch {
+          // silent
+        }
+      }
     },
-    []
+    [sessions]
   )
 
   // --- Effects ---
@@ -318,6 +344,27 @@ export default function WorkspacePage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
+  // Load history sessions from API
+  useEffect(() => {
+    fetch(`/api/sessions?limit=20&offset=${historyPage * 20}`)
+      .then((r) => r.json())
+      .then((data) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const mapped = (data.sessions || []).map((s: any) => ({
+          id: s.meta?.sessionId || s.id,
+          projectDir: s.meta?.projectDir || "",
+          model: s.meta?.model || "",
+          prompt: s.messages?.[0]?.content || "",
+          startedAt: s.meta?.startedAt || "",
+        }))
+        setHistorySessions((prev) =>
+          historyPage === 0 ? mapped : [...prev, ...mapped]
+        )
+        setHistoryHasMore(mapped.length === 20)
+      })
+      .catch(() => {})
+  }, [historyPage])
+
   // Keyboard shortcuts
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -335,6 +382,11 @@ export default function WorkspacePage() {
       if ((e.metaKey || e.ctrlKey) && e.key === "w" && !isInput) {
         e.preventDefault()
         if (selectedId) handleCloseSession(selectedId)
+      }
+      // Cmd/Ctrl+I — toggle detail drawer
+      if ((e.metaKey || e.ctrlKey) && e.key === "i") {
+        e.preventDefault()
+        setDrawerOpen((prev) => !prev)
       }
       // Cmd/Ctrl+1-9 — switch sessions
       if ((e.metaKey || e.ctrlKey) && e.key >= "1" && e.key <= "9") {
@@ -424,6 +476,11 @@ export default function WorkspacePage() {
           setShowNewForm(true)
           setSelectedId(null)
         }}
+        historySessions={historySessions}
+        onLoadMore={() => setHistoryPage((p) => p + 1)}
+        hasMore={historyHasMore}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
       />
 
       {/* Main content area */}
@@ -442,8 +499,20 @@ export default function WorkspacePage() {
             >
               {selectedSession.status}
             </Badge>
-            <div className="ml-auto text-xs text-muted-foreground">
-              {messages.length} message{messages.length !== 1 ? "s" : ""}
+            <div className="ml-auto flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">
+                {messages.length} message{messages.length !== 1 ? "s" : ""}
+              </span>
+              <button
+                onClick={() => setDrawerOpen((prev) => !prev)}
+                className={cn(
+                  "rounded p-1 transition-colors",
+                  drawerOpen ? "bg-accent text-accent-foreground" : "hover:bg-accent"
+                )}
+                title="Toggle details (\u2318I)"
+              >
+                <PanelRight className="size-4" />
+              </button>
             </div>
           </div>
         )}
@@ -776,6 +845,17 @@ export default function WorkspacePage() {
           </>
         )}
       </div>
+
+      {/* Right detail drawer */}
+      <DetailDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        sessionId={selectedId}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        messages={selectedId ? ((messagesBySession[selectedId] || []) as any[]) : []}
+        model={selectedSession?.model}
+        meta={selectedSessionMeta}
+      />
     </div>
   )
 }
