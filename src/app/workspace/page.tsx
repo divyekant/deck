@@ -49,6 +49,7 @@ export default function WorkspacePage() {
   const [launching, setLaunching] = useState(false)
   const [sending, setSending] = useState(false)
   const [launchError, setLaunchError] = useState<string | null>(null)
+  const [sendError, setSendError] = useState<string | null>(null)
 
   // Refs for auto-scroll
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -224,6 +225,7 @@ export default function WorkspacePage() {
   const handleSendFollowUp = useCallback(async () => {
     if (!selectedId || !followUp.trim()) return
     setSending(true)
+    setSendError(null)
 
     try {
       const res = await fetch(`/api/sessions/${selectedId}/message`, {
@@ -232,7 +234,7 @@ export default function WorkspacePage() {
         body: JSON.stringify({ prompt: followUp.trim() }),
       })
       const data = await res.json()
-      if (!data.ok) throw new Error(data.error)
+      if (!data.ok) throw new Error(data.error || "Failed to send message")
 
       setSessions((prev) =>
         prev.map((s) =>
@@ -241,8 +243,7 @@ export default function WorkspacePage() {
       )
       setFollowUp("")
     } catch (err) {
-      // Show error inline — could be improved
-      console.error("Failed to send follow-up:", err)
+      setSendError(err instanceof Error ? err.message : "Failed to send follow-up")
     } finally {
       setSending(false)
     }
@@ -260,9 +261,14 @@ export default function WorkspacePage() {
         await fetch(`/api/sessions/${id}/stop`, { method: "POST" }).catch(() => {})
       }
       setSessions((prev) => prev.filter((s) => s.id !== id))
+      setMessagesBySession((prev) => {
+        const { [id]: _, ...rest } = prev
+        return rest
+      })
       if (selectedId === id) {
         setSelectedId(null)
         setShowNewForm(false)
+        setSendError(null)
       }
     },
     [sessions, selectedId]
@@ -272,6 +278,7 @@ export default function WorkspacePage() {
     (id: string) => {
       setSelectedId(id)
       setShowNewForm(false)
+      setSendError(null)
     },
     []
   )
@@ -573,14 +580,15 @@ export default function WorkspacePage() {
                     />
                     Remote control
                   </label>
-                  <label className="flex items-center gap-2 text-sm">
+                  <label className="flex items-center gap-2 text-sm text-muted-foreground">
                     <input
                       type="checkbox"
                       checked={chromeMcp}
                       onChange={(e) => setChromeMcp(e.target.checked)}
                       className="rounded border-border"
+                      disabled
                     />
-                    Chrome MCP
+                    Chrome MCP (coming soon)
                   </label>
                   <div className="space-y-1">
                     <label className="text-sm text-muted-foreground">
@@ -715,6 +723,11 @@ export default function WorkspacePage() {
             {(selectedSession.status === "running" ||
               selectedSession.status === "idle") && (
               <div className="border-t border-border p-3">
+                {sendError && (
+                  <div className="mb-2 rounded-md border border-red-900 bg-red-950/50 px-3 py-1.5">
+                    <p className="text-xs text-red-400">{sendError}</p>
+                  </div>
+                )}
                 <div className="flex gap-2">
                   <textarea
                     value={followUp}

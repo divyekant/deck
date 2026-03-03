@@ -12,6 +12,18 @@ const ALLOWED_MODELS = [
 
 const ALLOWED_CLIS: CliTool[] = ["claude", "codex"];
 
+// Flags that are already covered by explicit options or are security-sensitive
+const DENIED_FLAGS = [
+  "--dangerously-skip-permissions",
+  "--enable-remote-control",
+  "--model",
+  "--session-id",
+  "--output-format",
+  "--max-turns",
+  "--system-prompt",
+  "-p",
+];
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -67,7 +79,9 @@ export async function POST(request: Request) {
       remoteControl: !!remoteControl,
       maxTurns: maxTurns ? Number(maxTurns) : undefined,
       systemPrompt: systemPrompt || undefined,
-      additionalFlags: additionalFlags ? String(additionalFlags).split(/\s+/).filter(Boolean) : undefined,
+      additionalFlags: additionalFlags
+        ? String(additionalFlags).split(/\s+/).filter(Boolean).filter((f: string) => !DENIED_FLAGS.includes(f.split("=")[0]))
+        : undefined,
     });
 
     if (result.error) {

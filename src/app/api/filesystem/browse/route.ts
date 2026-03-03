@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readdir, stat } from "fs/promises";
+import { readdir, stat, realpath } from "fs/promises";
 import { resolve } from "path";
 import { homedir } from "os";
 
@@ -8,8 +8,15 @@ export async function GET(req: NextRequest) {
   const resolved = resolve(path);
 
   // Security: only allow browsing under home directory
+  // Use realpath to resolve symlinks before checking
   const home = homedir();
-  if (!resolved.startsWith(home)) {
+  let real: string;
+  try {
+    real = await realpath(resolved);
+  } catch {
+    real = resolved;
+  }
+  if (real !== home && !real.startsWith(home + "/")) {
     return NextResponse.json({ error: "Path must be under home directory" }, { status: 403 });
   }
 
