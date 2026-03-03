@@ -281,37 +281,6 @@ export async function startSession(opts: {
   return { id };
 }
 
-export async function resumeSession(opts: {
-  sessionId: string;
-  prompt: string;
-  projectDir?: string;
-}): Promise<{ id: string; error?: string }> {
-  const { sessionId, prompt, projectDir } = opts;
-
-  const args = [
-    "--resume",
-    sessionId,
-    "-p",
-    "--verbose",
-    "--output-format=stream-json",
-    "--include-partial-messages",
-  ];
-
-  const result = await spawnClaudeProcess({
-    id: sessionId,
-    args,
-    cwd: projectDir || undefined,
-    prompt,
-    projectDir,
-  });
-
-  if (result.error) {
-    return { id: sessionId, error: result.error };
-  }
-
-  return { id: sessionId };
-}
-
 export function getRunningSession(id: string): RunningSession | undefined {
   return runningSessions.get(id);
 }
