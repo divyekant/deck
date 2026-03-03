@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
-import { Settings, Terminal, Loader2, PanelRight } from "lucide-react"
+import { Settings, Terminal, Loader2, PanelRight, Play } from "lucide-react"
+import { ReplayScrubber } from "@/components/workspace/replay-scrubber"
 
 interface StreamMessage {
   type: string
@@ -61,6 +62,12 @@ export default function WorkspacePage() {
   const [launchError, setLaunchError] = useState<string | null>(null)
   const [sendError, setSendError] = useState<string | null>(null)
 
+  // Replay mode
+  const [replayMode, setReplayMode] = useState(false)
+  const [replayIndex, setReplayIndex] = useState(0)
+  const [replayPlaying, setReplayPlaying] = useState(false)
+  const [replaySpeed, setReplaySpeed] = useState(1)
+
   // Refs for auto-scroll
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -69,6 +76,28 @@ export default function WorkspacePage() {
 
   const selectedSession = sessions.find((s) => s.id === selectedId) || null
   const messages = selectedId ? messagesBySession[selectedId] || [] : []
+
+  // For history sessions, create a virtual session object for display
+  const isHistorySession = selectedId != null && !sessions.some((s) => s.id === selectedId)
+  const historyMatch = historySessions.find((h) => h.id === selectedId)
+  const displaySession: WorkspaceSession | null = selectedSession || (
+    isHistorySession && historyMatch
+      ? {
+          id: historyMatch.id,
+          projectDir: historyMatch.projectDir || selectedSessionMeta?.projectDir || "",
+          model: historyMatch.model || selectedSessionMeta?.model || "",
+          prompt: historyMatch.prompt || "",
+          startedAt: historyMatch.startedAt || "",
+          status: "done" as const,
+        }
+      : null
+  )
+
+  // Replay eligibility
+  const isCompleted = displaySession?.status === "done" || displaySession?.status === "error"
+  const canReplay = (isCompleted || isHistorySession) && messages.length > 0
+  const canReplayRef = useRef(canReplay)
+  canReplayRef.current = canReplay
 
   const projectName = (dir: string) => dir.split("/").pop() || dir
 
@@ -311,11 +340,13 @@ export default function WorkspacePage() {
 
   // --- Effects ---
 
-  // Load session from URL params (handles "Continue" link from session detail page)
+  // Load session from URL params (handles redirects from detail/replay pages)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const sessionParam = params.get("session")
+    const replay = params.get("replay")
     if (sessionParam) {
+      // First try running sessions
       fetch("/api/sessions/running")
         .then((res) => res.json())
         .then((data) => {
@@ -333,16 +364,52 @@ export default function WorkspacePage() {
             setSessions([ws])
             setSelectedId(sessionParam)
             connectStream(sessionParam)
+          } else {
+            // Not running — load as history session
+            handleSelectSession(sessionParam)
+            if (replay === "true") {
+              // Small delay to let messages load first
+              setTimeout(() => setReplayMode(true), 500)
+            }
           }
         })
-        .catch(() => {})
+        .catch(() => {
+          // Fallback: try loading as history session
+          handleSelectSession(sessionParam)
+          if (replay === "true") {
+            setTimeout(() => setReplayMode(true), 500)
+          }
+        })
     }
-  }, [connectStream])
+  }, [connectStream, handleSelectSession])
 
   // Auto-scroll messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
+
+  // Replay playback timer
+  useEffect(() => {
+    if (!replayMode || !replayPlaying) return
+    const totalMsgs = messages.filter((m) => m.type === "user" || m.type === "assistant").length
+    const interval = setInterval(() => {
+      setReplayIndex((prev) => {
+        if (prev >= totalMsgs - 1) {
+          setReplayPlaying(false)
+          return prev
+        }
+        return prev + 1
+      })
+    }, 1000 / replaySpeed)
+    return () => clearInterval(interval)
+  }, [replayMode, replayPlaying, replaySpeed, messages])
+
+  // Reset replay mode when session changes
+  useEffect(() => {
+    setReplayMode(false)
+    setReplayPlaying(false)
+    setReplayIndex(0)
+  }, [selectedId])
 
   // Load history sessions from API
   useEffect(() => {
@@ -388,6 +455,17 @@ export default function WorkspacePage() {
         e.preventDefault()
         setDrawerOpen((prev) => !prev)
       }
+      // Cmd/Ctrl+R — toggle replay mode (completed sessions only)
+      if ((e.metaKey || e.ctrlKey) && e.key === "r") {
+        e.preventDefault()
+        if (canReplayRef.current) {
+          setReplayMode((prev) => {
+            if (!prev) setReplayIndex(0)
+            setReplayPlaying(false)
+            return !prev
+          })
+        }
+      }
       // Cmd/Ctrl+1-9 — switch sessions
       if ((e.metaKey || e.ctrlKey) && e.key >= "1" && e.key <= "9") {
         e.preventDefault()
@@ -408,9 +486,9 @@ export default function WorkspacePage() {
   // --- Render helpers ---
 
   function renderMessages() {
-    return messages
-      .filter((m) => m.type === "user" || m.type === "assistant")
-      .map((msg, i) => {
+    const filtered = messages.filter((m) => m.type === "user" || m.type === "assistant")
+    const displayMessages = replayMode ? filtered.slice(0, replayIndex + 1) : filtered
+    return displayMessages.map((msg, i) => {
         if (msg.type === "user") {
           const content =
             typeof msg.message?.content === "string"
@@ -486,23 +564,41 @@ export default function WorkspacePage() {
       {/* Main content area */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Header bar when session selected */}
-        {selectedSession && (
+        {displaySession && (
           <div className="flex items-center gap-3 border-b border-border px-4 py-2">
             <span className="font-medium">
-              {projectName(selectedSession.projectDir)}
+              {projectName(displaySession.projectDir)}
             </span>
-            <Badge variant="outline">{selectedSession.model}</Badge>
+            <Badge variant="outline">{displaySession.model}</Badge>
             <Badge
               variant={
-                selectedSession.status === "running" ? "default" : "secondary"
+                displaySession.status === "running" ? "default" : "secondary"
               }
             >
-              {selectedSession.status}
+              {displaySession.status}
             </Badge>
             <div className="ml-auto flex items-center gap-2">
               <span className="text-xs text-muted-foreground">
                 {messages.length} message{messages.length !== 1 ? "s" : ""}
               </span>
+              {canReplay && (
+                <button
+                  onClick={() => {
+                    setReplayMode((prev) => {
+                      if (!prev) setReplayIndex(0)
+                      setReplayPlaying(false)
+                      return !prev
+                    })
+                  }}
+                  className={cn(
+                    "rounded p-1 transition-colors",
+                    replayMode ? "bg-emerald-600 text-white" : "hover:bg-accent"
+                  )}
+                  title="Replay (⌘R)"
+                >
+                  <Play className="size-4" />
+                </button>
+              )}
               <button
                 onClick={() => setDrawerOpen((prev) => !prev)}
                 className={cn(
@@ -518,7 +614,7 @@ export default function WorkspacePage() {
         )}
 
         {/* Content area */}
-        {!selectedSession && !showNewForm && (
+        {!displaySession && !showNewForm && (
           /* Empty state */
           <div className="flex flex-1 items-center justify-center">
             <div className="text-center space-y-3">
@@ -541,7 +637,7 @@ export default function WorkspacePage() {
           </div>
         )}
 
-        {showNewForm && !selectedSession && (
+        {showNewForm && !displaySession && (
           /* New session form */
           <ScrollArea className="flex-1">
             <div className="mx-auto max-w-lg space-y-4 p-6">
@@ -749,14 +845,14 @@ export default function WorkspacePage() {
           </ScrollArea>
         )}
 
-        {selectedSession && (
+        {displaySession && (
           <>
             {/* Message stream */}
             <ScrollArea className="flex-1 p-4">
               <div className="space-y-1 pb-4">
                 {renderMessages()}
 
-                {selectedSession.status === "running" &&
+                {displaySession.status === "running" &&
                   messages.length === 0 && (
                     <div className="flex items-center gap-2 py-4">
                       <Loader2 className="size-4 animate-spin text-muted-foreground" />
@@ -766,18 +862,18 @@ export default function WorkspacePage() {
                     </div>
                   )}
 
-                {(selectedSession.status === "done" ||
-                  selectedSession.status === "error") && (
+                {!replayMode && (displaySession.status === "done" ||
+                  displaySession.status === "error") && (
                   <div
                     className={cn(
                       "mt-4 rounded-md border px-4 py-3",
-                      selectedSession.status === "done"
+                      displaySession.status === "done"
                         ? "border-zinc-800 bg-zinc-900/50"
                         : "border-red-900 bg-red-950/50"
                     )}
                   >
                     <span className="text-sm font-medium">
-                      {selectedSession.status === "done"
+                      {displaySession.status === "done"
                         ? "Session complete"
                         : "Session ended with error"}
                     </span>
@@ -788,9 +884,23 @@ export default function WorkspacePage() {
               </div>
             </ScrollArea>
 
-            {/* Input bar (sticky bottom) for active sessions */}
-            {(selectedSession.status === "running" ||
-              selectedSession.status === "idle") && (
+            {/* Bottom bar — either replay scrubber or input */}
+            {replayMode ? (
+              <ReplayScrubber
+                total={messages.filter((m) => m.type === "user" || m.type === "assistant").length}
+                currentIndex={replayIndex}
+                onChange={setReplayIndex}
+                playing={replayPlaying}
+                onPlayPause={() => setReplayPlaying((p) => !p)}
+                speed={replaySpeed}
+                onSpeedChange={setReplaySpeed}
+                onClose={() => {
+                  setReplayMode(false)
+                  setReplayPlaying(false)
+                }}
+              />
+            ) : (displaySession.status === "running" ||
+              displaySession.status === "idle") ? (
               <div className="border-t border-border p-3">
                 {sendError && (
                   <div className="mb-2 rounded-md border border-red-900 bg-red-950/50 px-3 py-1.5">
@@ -802,7 +912,7 @@ export default function WorkspacePage() {
                     value={followUp}
                     onChange={(e) => setFollowUp(e.target.value)}
                     placeholder={
-                      selectedSession.status === "running"
+                      displaySession.status === "running"
                         ? "Waiting for response..."
                         : "Send a follow-up..."
                     }
@@ -812,14 +922,14 @@ export default function WorkspacePage() {
                       if ((e.metaKey || e.ctrlKey) && e.key === "Enter")
                         handleSendFollowUp()
                     }}
-                    disabled={selectedSession.status === "running"}
+                    disabled={displaySession.status === "running"}
                   />
                   <Button
                     onClick={handleSendFollowUp}
                     disabled={
                       !followUp.trim() ||
                       sending ||
-                      selectedSession.status === "running"
+                      displaySession.status === "running"
                     }
                     size="sm"
                     className="self-end"
@@ -841,7 +951,7 @@ export default function WorkspacePage() {
                   </Button>
                 </div>
               </div>
-            )}
+            ) : null}
           </>
         )}
       </div>
@@ -853,7 +963,7 @@ export default function WorkspacePage() {
         sessionId={selectedId}
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         messages={selectedId ? ((messagesBySession[selectedId] || []) as any[]) : []}
-        model={selectedSession?.model}
+        model={displaySession?.model}
         meta={selectedSessionMeta}
       />
     </div>
