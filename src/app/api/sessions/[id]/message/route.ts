@@ -32,7 +32,7 @@ export async function POST(
       );
     }
 
-    const result = sendMessage(id, prompt.trim());
+    const result = await sendMessage(id, prompt.trim());
     if (result.error) {
       return NextResponse.json({ error: result.error }, { status: 400 });
     }

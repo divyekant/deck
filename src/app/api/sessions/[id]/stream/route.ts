@@ -46,6 +46,9 @@ export async function GET(
         }
       }
 
+      // Send an initial comment to flush headers immediately
+      controller.enqueue(encoder.encode(": connected\n\n"));
+
       // Send all accumulated output first
       for (const line of s.output) {
         send(line);
@@ -84,6 +87,17 @@ export async function GET(
 
       s.listeners.add(onLine);
       s.exitListeners.add(onExit);
+
+      // Send periodic keepalive to prevent connection timeout
+      const keepalive = setInterval(() => {
+        if (closed) { clearInterval(keepalive); return; }
+        try {
+          controller.enqueue(encoder.encode(": keepalive\n\n"));
+        } catch {
+          clearInterval(keepalive);
+          cleanup();
+        }
+      }, 15000);
     },
 
     cancel() {

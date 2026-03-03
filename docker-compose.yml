@@ -13,4 +13,6 @@ services:
     environment:
       - HOME=/home/node
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - DECK_ALLOWED_PATHS=/Users/divyekant/Projects
+      - DECK_USER_HOME=/Users/divyekant
     restart: unless-stopped

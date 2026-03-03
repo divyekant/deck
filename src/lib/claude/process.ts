@@ -85,7 +85,11 @@ async function spawnClaudeProcess(opts: {
   const authEnv = await getAuthEnv();
 
   // Build clean env: strip CLAUDECODE to avoid "cannot launch inside another CC session"
-  const { CLAUDECODE: _, ...cleanEnv } = process.env;
+  // When using OAuth, remove any ANTHROPIC_API_KEY to prevent it from taking priority
+  const { CLAUDECODE: _cc, ...cleanEnv } = process.env;
+  if (authEnv.ANTHROPIC_AUTH_TOKEN) {
+    delete cleanEnv.ANTHROPIC_API_KEY;
+  }
   const spawnEnv = { ...cleanEnv, PATH: CLI_PATH, ...authEnv };
 
   let proc: ChildProcess;
@@ -101,31 +105,30 @@ async function spawnClaudeProcess(opts: {
     };
   }
 
+  // Preserve existing session data (output, listeners) when resuming
+  const existing = runningSessions.get(opts.id);
   const session: RunningSession = {
     id: opts.id,
     process: proc,
-    projectDir: opts.projectDir || "",
-    model: opts.model || "",
+    projectDir: opts.projectDir || existing?.projectDir || "",
+    model: opts.model || existing?.model || "",
     prompt: opts.prompt || "",
-    startedAt: new Date(),
-    output: [],
+    startedAt: existing?.startedAt || new Date(),
+    output: existing?.output || [],
     exitCode: null,
     exited: false,
     idle: false,
     idleTimer: null,
-    cli: opts.cli || "claude",
-    listeners: new Set(),
-    exitListeners: new Set(),
+    cli: opts.cli || existing?.cli || "claude",
+    listeners: existing?.listeners || new Set(),
+    exitListeners: existing?.exitListeners || new Set(),
   };
 
   runningSessions.set(opts.id, session);
 
-  // Write prompt to stdin
+  // Write prompt to stdin and close — Claude -p mode reads until EOF
   if (proc.stdin && opts.prompt) {
     proc.stdin.write(opts.prompt + "\n");
-  }
-  // Keep stdin open for Claude (multi-turn), close for Codex (takes prompt as CLI arg)
-  if (opts.cli === "codex" && proc.stdin) {
     proc.stdin.end();
   }
 
@@ -329,15 +332,42 @@ export function getRunningSessionsList(): {
   }));
 }
 
-export function sendMessage(id: string, prompt: string): { error?: string } {
+export async function sendMessage(id: string, prompt: string): Promise<{ error?: string }> {
   const session = runningSessions.get(id);
   if (!session) return { error: "Session not found" };
-  if (session.exited) return { error: "Session has exited" };
-  if (!session.process.stdin?.writable) return { error: "Session stdin not writable" };
 
-  session.idle = false;
+  // Claude -p mode exits after each turn. For follow-ups, spawn a new
+  // process with --resume to continue the conversation.
   if (session.idleTimer) clearTimeout(session.idleTimer);
-  session.process.stdin.write(prompt + "\n");
+
+  const args = [
+    "--resume",
+    id,
+    "-p",
+    "--verbose",
+    "--output-format=stream-json",
+    "--include-partial-messages",
+  ];
+
+  // Reset session state for the new turn
+  session.idle = false;
+  session.exited = false;
+  session.exitCode = null;
+
+  const result = await spawnClaudeProcess({
+    id,
+    args,
+    cwd: session.projectDir || undefined,
+    prompt,
+    projectDir: session.projectDir,
+    model: session.model,
+    cli: session.cli,
+  });
+
+  if (result.error) {
+    return { error: result.error };
+  }
+
   return {};
 }
 

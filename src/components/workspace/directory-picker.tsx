@@ -86,7 +86,7 @@ export function DirectoryPicker({ value, onChange }: DirectoryPickerProps) {
         <Input
           ref={inputRef}
           value={query}
-          onChange={(e) => { setQuery(e.target.value); setOpen(true) }}
+          onChange={(e) => { setQuery(e.target.value); onChange(e.target.value); setOpen(true) }}
           onFocus={() => setOpen(true)}
           placeholder="~/Projects/my-project"
           className="h-8 text-sm"

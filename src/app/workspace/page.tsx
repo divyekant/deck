@@ -671,7 +671,7 @@ export default function WorkspacePage() {
                       navigator.platform?.includes("Mac")
                         ? "\u2318"
                         : "Ctrl"}
-                      +\u23CE
+                      {"+\u23CE"}
                     </kbd>
                   </>
                 )}
@@ -765,7 +765,7 @@ export default function WorkspacePage() {
                           navigator.platform?.includes("Mac")
                             ? "\u2318"
                             : "Ctrl"}
-                          +\u23CE
+                          {"+\u23CE"}
                         </kbd>
                       </>
                     )}

@@ -8,7 +8,7 @@ describe("sendMessage", () => {
 
   it("should return error for non-existent session", async () => {
     const { sendMessage } = await import("@/lib/claude/process");
-    const result = sendMessage("non-existent-id", "hello");
+    const result = await sendMessage("non-existent-id", "hello");
     expect(result.error).toBe("Session not found");
   });
 });

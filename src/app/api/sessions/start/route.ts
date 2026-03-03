@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { access } from "fs/promises";
 import { startSession, type CliTool } from "@/lib/claude/process";
 import { MODEL_PRICING } from "@/lib/claude/costs";
+import { expandTilde } from "@/lib/paths";
 
 const ALLOWED_MODELS = [
   "sonnet",
@@ -38,8 +39,10 @@ export async function POST(request: Request) {
       );
     }
 
+    const resolvedDir = expandTilde(projectDir.trim());
+
     try {
-      await access(projectDir.trim());
+      await access(resolvedDir);
     } catch {
       return NextResponse.json(
         { error: `projectDir does not exist or is not accessible: ${projectDir}` },
@@ -71,7 +74,7 @@ export async function POST(request: Request) {
     }
 
     const result = await startSession({
-      projectDir: projectDir.trim(),
+      projectDir: resolvedDir,
       model: model.trim(),
       prompt: prompt.trim(),
       cli,

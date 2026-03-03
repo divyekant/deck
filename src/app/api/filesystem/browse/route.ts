@@ -2,22 +2,37 @@ import { NextRequest, NextResponse } from "next/server";
 import { readdir, stat, realpath } from "fs/promises";
 import { resolve } from "path";
 import { homedir } from "os";
+import { expandTilde } from "@/lib/paths";
+
+// Allowed path prefixes: home directory + any extra from DECK_ALLOWED_PATHS (comma-separated)
+function getAllowedPrefixes(): string[] {
+  const prefixes = [homedir()];
+  const extra = process.env.DECK_ALLOWED_PATHS;
+  if (extra) {
+    prefixes.push(...extra.split(",").map((p) => p.trim()).filter(Boolean));
+  }
+  return prefixes;
+}
+
+function isUnderAllowedPrefix(realPath: string, prefixes: string[]): boolean {
+  return prefixes.some((p) => realPath === p || realPath.startsWith(p + "/"));
+}
 
 export async function GET(req: NextRequest) {
-  const path = req.nextUrl.searchParams.get("path") || homedir();
-  const resolved = resolve(path);
+  const rawPath = req.nextUrl.searchParams.get("path") || homedir();
+  const resolved = resolve(expandTilde(rawPath));
 
-  // Security: only allow browsing under home directory
+  // Security: only allow browsing under allowed prefixes
   // Use realpath to resolve symlinks before checking
-  const home = homedir();
+  const allowedPrefixes = getAllowedPrefixes();
   let real: string;
   try {
     real = await realpath(resolved);
   } catch {
     real = resolved;
   }
-  if (real !== home && !real.startsWith(home + "/")) {
-    return NextResponse.json({ error: "Path must be under home directory" }, { status: 403 });
+  if (!isUnderAllowedPrefix(real, allowedPrefixes)) {
+    return NextResponse.json({ error: "Path is outside allowed directories" }, { status: 403 });
   }
 
   try {
