@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Plus, X, RotateCw } from "lucide-react"
+import { Plus, X, RotateCw, Search } from "lucide-react"
 
 export interface WorkspaceSession {
   id: string
@@ -14,6 +14,15 @@ export interface WorkspaceSession {
   status: "running" | "idle" | "done" | "error"
 }
 
+export interface HistorySession {
+  id: string
+  projectDir: string
+  model: string
+  prompt: string
+  startedAt: string
+  cost?: number
+}
+
 interface SessionPanelProps {
   sessions: WorkspaceSession[]
   selectedId: string | null
@@ -21,6 +30,21 @@ interface SessionPanelProps {
   onClose: (id: string) => void
   onNewSession: () => void
   onRestart?: (session: WorkspaceSession) => void
+  historySessions?: HistorySession[]
+  onLoadMore?: () => void
+  hasMore?: boolean
+  searchQuery?: string
+  onSearchChange?: (query: string) => void
+}
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  const days = Math.floor(hrs / 24)
+  return `${days}d ago`
 }
 
 export function SessionPanel({
@@ -30,11 +54,23 @@ export function SessionPanel({
   onClose,
   onNewSession,
   onRestart,
+  historySessions,
+  onLoadMore,
+  hasMore,
+  searchQuery,
+  onSearchChange,
 }: SessionPanelProps) {
-  const active = sessions.filter((s) => s.status === "running" || s.status === "idle")
-  const recent = sessions.filter((s) => s.status === "done" || s.status === "error")
-
   const projectName = (dir: string) => dir.split("/").pop() || dir
+
+  const matchesQuery = (s: { projectDir: string; prompt: string }) => {
+    if (!searchQuery) return true
+    const q = searchQuery.toLowerCase()
+    return projectName(s.projectDir).toLowerCase().includes(q) || s.prompt.toLowerCase().includes(q)
+  }
+
+  const active = sessions.filter((s) => (s.status === "running" || s.status === "idle") && matchesQuery(s))
+  const recent = sessions.filter((s) => (s.status === "done" || s.status === "error") && matchesQuery(s))
+  const history = (historySessions ?? []).filter(matchesQuery)
 
   const statusDot = (status: WorkspaceSession["status"]) => {
     const colors = {
@@ -58,6 +94,21 @@ export function SessionPanel({
           <Plus className="size-3.5" />
         </Button>
       </div>
+
+      {onSearchChange && (
+        <div className="px-2 pb-2">
+          <div className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2 py-1">
+            <Search className="size-3 shrink-0 text-muted-foreground" />
+            <input
+              type="text"
+              value={searchQuery ?? ""}
+              onChange={(e) => onSearchChange(e.target.value)}
+              placeholder="Search sessions..."
+              className="w-full bg-transparent text-xs outline-none placeholder:text-muted-foreground"
+            />
+          </div>
+        </div>
+      )}
 
       <ScrollArea className="flex-1">
         {active.length > 0 && (
@@ -125,6 +176,46 @@ export function SessionPanel({
                 )}
               </button>
             ))}
+          </div>
+        )}
+        {history.length > 0 && (
+          <div className="px-2 pb-2">
+            <span className="px-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+              History
+            </span>
+            {history.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => onSelect(s.id)}
+                className={cn(
+                  "group mt-1 flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors",
+                  selectedId === s.id
+                    ? "bg-accent text-accent-foreground"
+                    : "hover:bg-accent/50"
+                )}
+              >
+                <span className="inline-block size-2 shrink-0 rounded-full bg-zinc-600" />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-medium">{projectName(s.projectDir)}</div>
+                  <div className="truncate text-xs text-muted-foreground">
+                    {s.model} &middot; {timeAgo(s.startedAt)}
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {hasMore && onLoadMore && (
+          <div className="px-2 pb-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full text-xs text-muted-foreground"
+              onClick={onLoadMore}
+            >
+              Load more
+            </Button>
           </div>
         )}
       </ScrollArea>
