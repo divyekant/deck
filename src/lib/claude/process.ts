@@ -43,6 +43,8 @@ interface RunningSession {
   output: string[]; // accumulated output lines
   exitCode: number | null;
   exited: boolean;
+  idle: boolean; // true when waiting for user input
+  cli: CliTool;
   listeners: Set<(line: string) => void>;
   exitListeners: Set<(code: number | null) => void>;
 }
@@ -97,17 +99,20 @@ async function spawnClaudeProcess(opts: {
     output: [],
     exitCode: null,
     exited: false,
+    idle: false,
+    cli: opts.cli || "claude",
     listeners: new Set(),
     exitListeners: new Set(),
   };
 
   runningSessions.set(opts.id, session);
 
-  // Write prompt to stdin and close it (only for claude, not codex)
+  // Write prompt to stdin
   if (proc.stdin && opts.prompt) {
-    proc.stdin.write(opts.prompt);
-    proc.stdin.end();
-  } else if (proc.stdin) {
+    proc.stdin.write(opts.prompt + "\n");
+  }
+  // Keep stdin open for Claude (multi-turn), close for Codex (takes prompt as CLI arg)
+  if (opts.cli === "codex" && proc.stdin) {
     proc.stdin.end();
   }
 
@@ -123,6 +128,17 @@ async function spawnClaudeProcess(opts: {
       const trimmed = line.trim();
       if (trimmed) {
         session.output.push(trimmed);
+
+        // Detect result message to mark session as idle (ready for follow-up)
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (parsed.type === "result") {
+            session.idle = true;
+          }
+        } catch {
+          // Not JSON — ignore
+        }
+
         // Notify all live listeners
         for (const listener of session.listeners) {
           listener(trimmed);
@@ -286,6 +302,17 @@ export function getRunningSessionsList(): {
     prompt: s.prompt,
     startedAt: s.startedAt,
   }));
+}
+
+export function sendMessage(id: string, prompt: string): { error?: string } {
+  const session = runningSessions.get(id);
+  if (!session) return { error: "Session not found" };
+  if (session.exited) return { error: "Session has exited" };
+  if (!session.process.stdin?.writable) return { error: "Session stdin not writable" };
+
+  session.idle = false;
+  session.process.stdin.write(prompt + "\n");
+  return {};
 }
 
 export function stopSession(id: string): boolean {
