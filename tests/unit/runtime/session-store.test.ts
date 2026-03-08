@@ -24,8 +24,8 @@ function makeRuntime(): SessionRuntime {
     cli: "claude",
     ensureSession: vi.fn(),
     runTurn: vi.fn(),
-    cancel: vi.fn(),
-    close: vi.fn(),
+    cancel: vi.fn().mockResolvedValue(undefined),
+    close: vi.fn().mockResolvedValue(undefined),
   } as unknown as SessionRuntime;
 }
 

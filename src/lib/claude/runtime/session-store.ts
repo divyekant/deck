@@ -73,11 +73,7 @@ export class SessionStore {
 
       const elapsed = now - entry.handle.lastAccessedAt.getTime();
       if (elapsed > this.config.idleTtlMs) {
-        try {
-          entry.runtime.close(entry.handle);
-        } catch {
-          // swallow close errors during eviction
-        }
+        entry.runtime.close(entry.handle).catch(() => {});
         this.sessions.delete(id);
       }
     }
@@ -90,11 +86,7 @@ export class SessionStore {
     }
 
     for (const [, entry] of this.sessions) {
-      try {
-        entry.runtime.close(entry.handle);
-      } catch {
-        // swallow close errors during disposal
-      }
+      entry.runtime.close(entry.handle).catch(() => {});
     }
 
     this.sessions.clear();
@@ -117,11 +109,7 @@ export class SessionStore {
 
     if (!oldest) return false;
 
-    try {
-      oldest.entry.runtime.close(oldest.entry.handle);
-    } catch {
-      // swallow close errors during eviction
-    }
+    oldest.entry.runtime.close(oldest.entry.handle).catch(() => {});
     this.sessions.delete(oldest.id);
     return true;
   }
