@@ -264,10 +264,11 @@ export class ClaudeRuntime implements SessionRuntime {
     // Wait up to 3 seconds for graceful exit
     const graceful = await Promise.race([
       new Promise<boolean>((resolve) => {
-        entry.process.on("close", () => resolve(true));
-      }),
-      new Promise<boolean>((resolve) => {
-        setTimeout(() => resolve(false), 3000);
+        const timer = setTimeout(() => resolve(false), 3000);
+        entry.process.once("close", () => {
+          clearTimeout(timer);
+          resolve(true);
+        });
       }),
     ]);
 
