@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { access } from "fs/promises";
-import { startSession, type CliTool } from "@/lib/claude/process";
+import { createSession, type CliTool } from "@/lib/claude/runtime";
 import { MODEL_PRICING } from "@/lib/claude/costs";
 import { expandTilde } from "@/lib/paths";
 
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = await startSession({
+    const result = await createSession({
       projectDir: resolvedDir,
       model: model.trim(),
       prompt: prompt.trim(),

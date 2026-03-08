@@ -1,4 +1,4 @@
-import { getRunningSession } from "@/lib/claude/process";
+import { getActiveSession, getProcessEntry } from "@/lib/claude/runtime";
 
 export const dynamic = "force-dynamic";
 
@@ -7,7 +7,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const session = getRunningSession(id);
+  const session = getActiveSession(id);
 
   if (!session) {
     return new Response(JSON.stringify({ error: "Session not found" }), {
@@ -16,8 +16,22 @@ export async function GET(
     });
   }
 
-  // Capture in a const so TypeScript knows it's defined inside the closure
-  const s = session;
+  const entry = getProcessEntry(id) as
+    | {
+        output: string[];
+        listeners: Set<(line: string) => void>;
+        exitListeners: Set<(code: number | null) => void>;
+        process: { exitCode: number | null };
+      }
+    | undefined;
+
+  if (!entry) {
+    return new Response(JSON.stringify({ error: "Process entry not found" }), {
+      status: 404,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({
@@ -37,8 +51,8 @@ export async function GET(
       function cleanup() {
         if (closed) return;
         closed = true;
-        s.listeners.delete(onLine);
-        s.exitListeners.delete(onExit);
+        entry!.listeners.delete(onLine);
+        entry!.exitListeners.delete(onExit);
         try {
           controller.close();
         } catch {
@@ -50,19 +64,22 @@ export async function GET(
       controller.enqueue(encoder.encode(": connected\n\n"));
 
       // Send all accumulated output first
-      for (const line of s.output) {
+      for (const line of entry.output) {
         send(line);
       }
 
+      // Derive exited state from the underlying ChildProcess
+      const exited = entry.process.exitCode !== null;
+
       // If truly exited (not just idle), send done and close
-      if (s.exited) {
-        send(JSON.stringify({ type: "done", exitCode: s.exitCode }));
+      if (exited) {
+        send(JSON.stringify({ type: "done", exitCode: entry.process.exitCode }));
         cleanup();
         return;
       }
 
       // If session is idle (waiting for next prompt), signal it
-      if (s.idle) {
+      if (session.idle) {
         send(JSON.stringify({ type: "idle" }));
       }
 
@@ -85,8 +102,8 @@ export async function GET(
         cleanup();
       }
 
-      s.listeners.add(onLine);
-      s.exitListeners.add(onExit);
+      entry.listeners.add(onLine);
+      entry.exitListeners.add(onExit);
 
       // Send periodic keepalive to prevent connection timeout
       const keepalive = setInterval(() => {

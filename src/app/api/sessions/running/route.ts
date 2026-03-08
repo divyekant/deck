@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
-import { getRunningSessionsList } from "@/lib/claude/process";
+import { listActiveSessions } from "@/lib/claude/runtime";
 import { getProjectDirs, CLAUDE_DIR } from "@/lib/claude/sessions";
 import { parseJsonlLine } from "@/lib/claude/parser";
 
@@ -149,14 +149,14 @@ async function detectRecentlyActiveSessions(): Promise<RunningSessionEntry[]> {
 export async function GET() {
   try {
     // Get Deck-spawned sessions
-    const deckSessions = getRunningSessionsList();
+    const deckSessions = listActiveSessions();
     const deckIds = new Set(deckSessions.map((s) => s.id));
 
     const merged: RunningSessionEntry[] = deckSessions.map((s) => ({
       id: s.id,
       projectDir: s.projectDir,
       model: s.model,
-      prompt: s.prompt,
+      prompt: "",
       startedAt:
         s.startedAt instanceof Date
           ? s.startedAt.toISOString()
