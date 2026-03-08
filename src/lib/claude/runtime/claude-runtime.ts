@@ -212,7 +212,7 @@ export class ClaudeRuntime implements SessionRuntime {
     return handle;
   }
 
-  runTurn(handle: SessionHandle, prompt: string): AsyncIterable<SessionEvent> {
+  async runTurn(handle: SessionHandle, prompt: string): Promise<AsyncIterable<SessionEvent>> {
     const entry = this.processes.get(handle.id);
     if (!entry) {
       throw new Error(`No process entry found for session ${handle.id}`);
@@ -230,7 +230,7 @@ export class ClaudeRuntime implements SessionRuntime {
       proc.stdin!.write(prompt + "\n");
     } else {
       // Fallback: respawn with --resume
-      this.respawnForResume(handle, entry, prompt);
+      await this.respawnForResume(handle, entry, prompt);
     }
 
     return this.createEventStream(handle, entry);
@@ -354,11 +354,11 @@ export class ClaudeRuntime implements SessionRuntime {
     });
   }
 
-  private respawnForResume(
+  private async respawnForResume(
     handle: SessionHandle,
     entry: ProcessEntry,
     prompt: string,
-  ): void {
+  ): Promise<void> {
     const args = [
       "--resume",
       handle.id,
@@ -368,8 +368,15 @@ export class ClaudeRuntime implements SessionRuntime {
       "--include-partial-messages",
     ];
 
+    // Auth env
+    const authEnv = await getAuthEnv();
+
+    // Build clean env
     const { CLAUDECODE: _cc, ...cleanEnv } = process.env;
-    const spawnEnv = { ...cleanEnv, PATH: CLI_PATH };
+    if (authEnv.ANTHROPIC_AUTH_TOKEN) {
+      delete cleanEnv.ANTHROPIC_API_KEY;
+    }
+    const spawnEnv = { ...cleanEnv, PATH: CLI_PATH, ...authEnv };
 
     const proc = spawn("claude", args, {
       cwd: handle.projectDir || undefined,

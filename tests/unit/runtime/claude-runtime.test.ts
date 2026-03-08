@@ -219,7 +219,7 @@ describe("ClaudeRuntime", () => {
       prompt: "init",
     });
 
-    const iter = runtime.runTurn(handle, "Say hello");
+    const iter = await runtime.runTurn(handle, "Say hello");
 
     // Push events after starting iteration so the listener is attached
     queueMicrotask(() => {
@@ -257,7 +257,7 @@ describe("ClaudeRuntime", () => {
       prompt: "init",
     });
 
-    const iter = runtime.runTurn(handle, "Think about this");
+    const iter = await runtime.runTurn(handle, "Think about this");
 
     queueMicrotask(() => {
       pushLine(mockProc, {
@@ -295,7 +295,7 @@ describe("ClaudeRuntime", () => {
       prompt: "init",
     });
 
-    const iter = runtime.runTurn(handle, "Read a file");
+    const iter = await runtime.runTurn(handle, "Read a file");
 
     queueMicrotask(() => {
       pushLine(mockProc, {
@@ -350,7 +350,7 @@ describe("ClaudeRuntime", () => {
 
     expect(handle.idle).toBe(false);
 
-    const iter = runtime.runTurn(handle, "Do something");
+    const iter = await runtime.runTurn(handle, "Do something");
 
     queueMicrotask(() => {
       pushLine(mockProc, { type: "result", subtype: "success" });
@@ -376,7 +376,7 @@ describe("ClaudeRuntime", () => {
       prompt: "init",
     });
 
-    const iter = runtime.runTurn(handle, "Do something");
+    const iter = await runtime.runTurn(handle, "Do something");
 
     // Directly inject an error line and result line via the process entry's listeners
     // This bypasses the Readable stream timing issues and tests the event translation
@@ -444,5 +444,105 @@ describe("ClaudeRuntime", () => {
     expect(entry!.output).toBeInstanceOf(Array);
     expect(entry!.listeners).toBeInstanceOf(Set);
     expect(entry!.exitListeners).toBeInstanceOf(Set);
+  });
+
+  // -- Test 13: runTurn respawns with --resume when stdin is destroyed --
+  it("runTurn respawns with --resume and session ID when stdin is destroyed", async () => {
+    const { ClaudeRuntime } = await import(
+      "@/lib/claude/runtime/claude-runtime"
+    );
+    const runtime = new ClaudeRuntime();
+
+    const handle = await runtime.ensureSession({
+      projectDir: "/tmp/test-project",
+      model: "claude-sonnet-4-20250514",
+      prompt: "init",
+    });
+
+    // Destroy stdin to simulate a broken connection
+    mockProc.stdin!.destroy();
+
+    // Create a new mock process for the respawn
+    const resumeProc = makeMockProcess();
+    spawnFn.mockReturnValue(resumeProc);
+
+    // runTurn should detect dead stdin and respawn
+    const iter = await runtime.runTurn(handle, "Follow-up prompt");
+
+    // Verify spawn was called again (second call = respawn)
+    expect(spawnFn).toHaveBeenCalledTimes(2);
+    const [binary, args] = spawnFn.mock.calls[1];
+    expect(binary).toBe("claude");
+    expect(args).toContain("--resume");
+    expect(args).toContain(handle.id);
+
+    // Emit result to close the stream
+    queueMicrotask(() => {
+      pushLine(resumeProc, { type: "result" });
+    });
+
+    const events = await collectEvents(iter);
+    const doneEvents = events.filter((e) => e.type === "done");
+    expect(doneEvents).toHaveLength(1);
+  });
+
+  // -- Test 14: cancel sends SIGKILL after 5 second timeout --
+  it("cancel sends SIGKILL after 5 second timeout", async () => {
+    const { ClaudeRuntime } = await import(
+      "@/lib/claude/runtime/claude-runtime"
+    );
+    const runtime = new ClaudeRuntime();
+
+    const handle = await runtime.ensureSession({
+      projectDir: "/tmp/test-project",
+      model: "claude-sonnet-4-20250514",
+      prompt: "init",
+    });
+
+    const killFn = (mockProc as unknown as { kill: ReturnType<typeof vi.fn> })
+      .kill;
+
+    await runtime.cancel(handle);
+
+    // SIGTERM should have been called immediately
+    expect(killFn).toHaveBeenCalledWith("SIGTERM");
+    expect(killFn).not.toHaveBeenCalledWith("SIGKILL");
+
+    // Advance timers by 5 seconds to trigger the force kill
+    vi.advanceTimersByTime(5000);
+
+    expect(killFn).toHaveBeenCalledWith("SIGKILL");
+  });
+
+  // -- Test 15: close ends stdin and removes process from internal map --
+  it("close ends stdin and removes process from internal map", async () => {
+    const { ClaudeRuntime } = await import(
+      "@/lib/claude/runtime/claude-runtime"
+    );
+    const runtime = new ClaudeRuntime();
+
+    const handle = await runtime.ensureSession({
+      projectDir: "/tmp/test-project",
+      model: "claude-sonnet-4-20250514",
+      prompt: "init",
+    });
+
+    // Verify the entry exists before close
+    expect(runtime.getProcessEntry(handle.id)).toBeDefined();
+
+    const stdinEndSpy = vi.spyOn(mockProc.stdin!, "end");
+
+    // Simulate immediate graceful close by emitting 'close' event
+    queueMicrotask(() => {
+      mockProc.emit("close", 0);
+    });
+
+    await runtime.close(handle);
+
+    // stdin.end() should have been called
+    expect(stdinEndSpy).toHaveBeenCalled();
+
+    // Process should be removed from internal map
+    expect(runtime.getProcessEntry(handle.id)).toBeUndefined();
   });
 });

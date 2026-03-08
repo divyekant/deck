@@ -49,7 +49,7 @@ export interface SessionRuntime {
   runTurn(
     handle: SessionHandle,
     prompt: string,
-  ): AsyncIterable<SessionEvent>;
+  ): AsyncIterable<SessionEvent> | Promise<AsyncIterable<SessionEvent>>;
   cancel(handle: SessionHandle): Promise<void>;
   close(handle: SessionHandle): Promise<void>;
 }
