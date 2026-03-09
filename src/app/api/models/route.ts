@@ -36,9 +36,9 @@ export async function GET() {
         totalCost: number
         totalInputTokens: number
         totalOutputTokens: number
-        totalDuration: number
+        totalCacheCreation: number
         totalCacheRead: number
-        totalCacheBase: number // totalInputTokens + cacheReadTokens for cache hit rate denominator
+        totalDuration: number
       }
     >()
 
@@ -48,24 +48,26 @@ export async function GET() {
         totalCost: 0,
         totalInputTokens: 0,
         totalOutputTokens: 0,
-        totalDuration: 0,
+        totalCacheCreation: 0,
         totalCacheRead: 0,
-        totalCacheBase: 0,
+        totalDuration: 0,
       }
       existing.sessions += 1
       existing.totalCost += s.estimatedCost
       existing.totalInputTokens += s.totalInputTokens
       existing.totalOutputTokens += s.totalOutputTokens
-      existing.totalDuration += s.duration
+      existing.totalCacheCreation += s.cacheCreationTokens
       existing.totalCacheRead += s.cacheReadTokens
-      existing.totalCacheBase += s.totalInputTokens + s.cacheReadTokens
+      existing.totalDuration += s.duration
       modelMap.set(s.model, existing)
     }
 
     // Compute per-model stats
     const models: ModelStats[] = Array.from(modelMap.entries())
       .map(([model, data]) => {
-        const totalTokens = data.totalInputTokens + data.totalOutputTokens
+        // Total tokens includes all categories: non-cached input + output + cache write + cache read
+        const totalTokens = data.totalInputTokens + data.totalOutputTokens + data.totalCacheCreation + data.totalCacheRead
+        const cacheBase = data.totalInputTokens + data.totalCacheRead
         return {
           model,
           sessionCount: data.sessions,
@@ -73,7 +75,7 @@ export async function GET() {
           avgCost: data.sessions > 0 ? data.totalCost / data.sessions : 0,
           avgTokens: data.sessions > 0 ? totalTokens / data.sessions : 0,
           avgDuration: data.sessions > 0 ? data.totalDuration / data.sessions : 0,
-          cacheHitRate: data.totalCacheBase > 0 ? data.totalCacheRead / data.totalCacheBase : 0,
+          cacheHitRate: cacheBase > 0 ? data.totalCacheRead / cacheBase : 0,
           costPerToken: totalTokens > 0 ? data.totalCost / totalTokens : 0,
           totalInputTokens: data.totalInputTokens,
           totalOutputTokens: data.totalOutputTokens,

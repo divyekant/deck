@@ -152,6 +152,7 @@ function computeAnalytics(sessions: SessionMeta[]): AnalyticsResponse {
       cost: number;
       inputTokens: number;
       outputTokens: number;
+      cacheTokens: number;
     }
   >();
   const projectMap = new Map<string, { cost: number; sessions: number }>();
@@ -184,11 +185,13 @@ function computeAnalytics(sessions: SessionMeta[]): AnalyticsResponse {
       cost: 0,
       inputTokens: 0,
       outputTokens: 0,
+      cacheTokens: 0,
     };
     me.sessions += 1;
     me.cost += s.estimatedCost;
     me.inputTokens += s.totalInputTokens;
     me.outputTokens += s.totalOutputTokens;
+    me.cacheTokens += s.cacheCreationTokens + s.cacheReadTokens;
     modelMap.set(s.model, me);
 
     // Project ranking (all time)
@@ -225,7 +228,7 @@ function computeAnalytics(sessions: SessionMeta[]): AnalyticsResponse {
       avgTokensPerSession:
         data.sessions > 0
           ? Math.round(
-              (data.inputTokens + data.outputTokens) / data.sessions
+              (data.inputTokens + data.outputTokens + data.cacheTokens) / data.sessions
             )
           : 0,
     }))
