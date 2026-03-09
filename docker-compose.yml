@@ -3,16 +3,16 @@ services:
     build: .
     container_name: deck
     ports:
-      - "3001:3001"
+      - "${DECK_PORT:-3001}:3001"
     volumes:
       - ~/.claude:/home/node/.claude
       - ~/.claude.json:/home/node/.claude.json
       - ~/.codex:/home/node/.codex:ro
       - ~/.deck:/home/node/.deck
-      - ~/Projects:/Users/divyekant/Projects:ro
+      # Mount host projects directory for browsing (read-only)
+      - ${DECK_PROJECTS_DIR:-~/Projects}:/host-projects:ro
     environment:
       - HOME=/home/node
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
-      - DECK_ALLOWED_PATHS=/Users/divyekant/Projects
-      - DECK_USER_HOME=/Users/divyekant
+      - DECK_ALLOWED_PATHS=/host-projects
     restart: unless-stopped

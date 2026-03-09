@@ -1,5 +1,6 @@
 import { execSync } from "child_process";
 import type { ChildProcess } from "child_process";
+import { existsSync, readdirSync } from "fs";
 
 // ---- Shared ProcessEntry ----
 
@@ -14,14 +15,37 @@ export interface ProcessEntry {
 
 function getCliPath(): string {
   const base = process.env.PATH || "/usr/bin:/bin:/usr/sbin:/sbin";
-  const extras = [
-    `${process.env.HOME}/.nvm/versions/node/v24.12.0/bin`,
-    `${process.env.HOME}/.orbstack/bin`,
-    `${process.env.HOME}/homebrew/bin`,
-    `${process.env.HOME}/.local/bin`,
-    "/usr/local/bin",
-    "/opt/homebrew/bin",
-  ];
+  const home = process.env.HOME || "";
+  const extras: string[] = [];
+
+  // Auto-detect NVM node bin (pick highest installed version)
+  if (home) {
+    const nvmVersionsDir = `${home}/.nvm/versions/node`;
+    try {
+      const versions = readdirSync(nvmVersionsDir)
+        .filter((v) => v.startsWith("v"))
+        .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
+      if (versions.length > 0) {
+        extras.push(`${nvmVersionsDir}/${versions[0]}/bin`);
+      }
+    } catch {
+      // NVM not installed — skip
+    }
+
+    // Common tool locations — added only if they exist
+    const candidates = [
+      `${home}/.orbstack/bin`,
+      `${home}/homebrew/bin`,
+      `${home}/.local/bin`,
+    ];
+    for (const dir of candidates) {
+      if (existsSync(dir)) extras.push(dir);
+    }
+  }
+
+  // System-wide paths
+  extras.push("/usr/local/bin", "/opt/homebrew/bin");
+
   const parts = new Set(base.split(":"));
   for (const p of extras) parts.add(p);
   return Array.from(parts).join(":");
