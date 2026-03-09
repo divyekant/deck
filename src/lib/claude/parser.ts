@@ -352,8 +352,11 @@ export async function parseCodexSessionFile(
   const projectName = cwd ? path.basename(cwd) : "codex";
 
   // Calculate cost using our pricing table
+  // OpenAI's total_token_usage.input_tokens INCLUDES cached tokens,
+  // so subtract cached to avoid double-counting (Anthropic separates them).
+  const nonCachedInputTokens = Math.max(0, totalInputTokens - cachedInputTokens);
   const tokenUsage: TokenUsage = {
-    input_tokens: totalInputTokens,
+    input_tokens: nonCachedInputTokens,
     output_tokens: totalOutputTokens,
     cache_creation_input_tokens: 0,
     cache_read_input_tokens: cachedInputTokens,
@@ -371,7 +374,7 @@ export async function parseCodexSessionFile(
     model: model || "unknown",
     firstPrompt: firstPrompt.slice(0, 200),
     messageCount,
-    totalInputTokens,
+    totalInputTokens: nonCachedInputTokens,
     totalOutputTokens,
     cacheCreationTokens: 0,
     cacheReadTokens: cachedInputTokens,

@@ -64,6 +64,12 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     cacheWrite: 0,
     cacheRead: 0.5,
   },
+  "gpt-5.4": {
+    input: 2.5,
+    output: 15,
+    cacheWrite: 0,
+    cacheRead: 1.25,
+  },
 };
 
 /**

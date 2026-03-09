@@ -247,6 +247,20 @@ export default function WorkspacePage() {
       setSessions((prev) => [newSession, ...prev])
       setSelectedId(data.sessionId)
       setShowNewForm(false)
+
+      // Add synthetic user message so the prompt is visible in the conversation
+      setMessagesBySession((prev) => ({
+        ...prev,
+        [data.sessionId]: [
+          ...(prev[data.sessionId] || []),
+          {
+            type: "user",
+            message: { role: "user", content: prompt.trim() },
+            timestamp: new Date().toISOString(),
+          } as StreamMessage,
+        ],
+      }))
+
       setPrompt("")
       setLaunching(false)
 
@@ -267,13 +281,27 @@ export default function WorkspacePage() {
     setSendError(null)
 
     try {
+      const currentFollowUp = followUp.trim()
       const res = await fetch(`/api/sessions/${selectedId}/message`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: followUp.trim() }),
+        body: JSON.stringify({ prompt: currentFollowUp }),
       })
       const data = await res.json()
       if (!data.ok) throw new Error(data.error || "Failed to send message")
+
+      // Add synthetic user message so the follow-up is visible in the conversation
+      setMessagesBySession((prev) => ({
+        ...prev,
+        [selectedId]: [
+          ...(prev[selectedId] || []),
+          {
+            type: "user",
+            message: { role: "user", content: currentFollowUp },
+            timestamp: new Date().toISOString(),
+          } as StreamMessage,
+        ],
+      }))
 
       setSessions((prev) =>
         prev.map((s) =>
