@@ -1,5 +1,4 @@
-import { spawn, execSync } from "child_process";
-import type { ChildProcess } from "child_process";
+import { spawn } from "child_process";
 import { randomUUID } from "crypto";
 import { getAuthEnv } from "@/lib/auth";
 import type {
@@ -9,46 +8,17 @@ import type {
   SessionHandle,
   SessionRuntime,
 } from "./types";
+import {
+  type ProcessEntry,
+  CLI_PATH,
+  isCliAvailable,
+  wireStdout,
+  wireStderr,
+  wireProcessEvents,
+} from "./utils";
 
-// ---- Internal state ----
-
-export interface ProcessEntry {
-  process: ChildProcess;
-  output: string[];
-  listeners: Set<(line: string) => void>;
-  exitListeners: Set<(code: number | null) => void>;
-}
-
-// ---- PATH helper (shared pattern with ClaudeRuntime) ----
-
-function getCliPath(): string {
-  const base = process.env.PATH || "/usr/bin:/bin:/usr/sbin:/sbin";
-  const extras = [
-    `${process.env.HOME}/.nvm/versions/node/v24.12.0/bin`,
-    `${process.env.HOME}/.orbstack/bin`,
-    `${process.env.HOME}/homebrew/bin`,
-    `${process.env.HOME}/.local/bin`,
-    "/usr/local/bin",
-    "/opt/homebrew/bin",
-  ];
-  const parts = new Set(base.split(":"));
-  for (const p of extras) parts.add(p);
-  return Array.from(parts).join(":");
-}
-
-const CLI_PATH = getCliPath();
-
-function isCliAvailable(binary: string): boolean {
-  try {
-    execSync(`which ${binary}`, {
-      env: { ...process.env, PATH: CLI_PATH },
-      stdio: "pipe",
-    });
-    return true;
-  } catch {
-    return false;
-  }
-}
+// Re-export for consumers
+export type { ProcessEntry } from "./utils";
 
 // ---- CodexRuntime (one-shot mode) ----
 
@@ -103,14 +73,10 @@ export class CodexRuntime implements SessionRuntime {
 
     this.processes.set(id, entry);
 
-    // Wire stdout line buffering
-    this.wireStdout(proc, entry);
-
-    // Wire stderr
-    this.wireStderr(proc, entry);
-
-    // Wire close/error events
-    this.wireProcessEvents(id, proc, entry);
+    // Wire I/O using shared helpers (stderr now uses JSON wrapping, consistent with Claude)
+    wireStdout(entry, proc);
+    wireStderr(entry, proc);
+    wireProcessEvents(id, proc, entry);
 
     // Close stdin immediately (one-shot mode, prompt is a positional arg)
     if (proc.stdin && !proc.stdin.destroyed) {
@@ -184,10 +150,10 @@ export class CodexRuntime implements SessionRuntime {
 
     this.processes.set(handle.id, entry);
 
-    // Wire I/O
-    this.wireStdout(proc, entry);
-    this.wireStderr(proc, entry);
-    this.wireProcessEvents(handle.id, proc, entry);
+    // Wire I/O using shared helpers
+    wireStdout(entry, proc);
+    wireStderr(entry, proc);
+    wireProcessEvents(handle.id, proc, entry);
 
     // Close stdin (one-shot)
     if (proc.stdin && !proc.stdin.destroyed) {
@@ -252,69 +218,6 @@ export class CodexRuntime implements SessionRuntime {
 
   // ---- Private helpers ----
 
-  private wireStdout(proc: ChildProcess, entry: ProcessEntry): void {
-    let buffer = "";
-    proc.stdout?.on("data", (chunk: Buffer) => {
-      buffer += chunk.toString();
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || "";
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (trimmed) {
-          entry.output.push(trimmed);
-          for (const listener of entry.listeners) {
-            listener(trimmed);
-          }
-        }
-      }
-    });
-  }
-
-  private wireStderr(proc: ChildProcess, entry: ProcessEntry): void {
-    proc.stderr?.on("data", (chunk: Buffer) => {
-      const text = chunk.toString().trim();
-      if (text) {
-        const errorLine = `[stderr] ${text}`;
-        entry.output.push(errorLine);
-        for (const listener of entry.listeners) {
-          listener(errorLine);
-        }
-      }
-    });
-  }
-
-  private wireProcessEvents(
-    id: string,
-    proc: ChildProcess,
-    entry: ProcessEntry,
-  ): void {
-    proc.on("close", (code) => {
-      for (const exitListener of entry.exitListeners) {
-        exitListener(code);
-      }
-      entry.exitListeners.clear();
-
-      // Remove from internal map after 5 minutes
-      setTimeout(() => {
-        this.processes.delete(id);
-      }, 5 * 60 * 1000);
-    });
-
-    proc.on("error", (err) => {
-      const errorLine = `[stderr] Process error: ${err.message}`;
-      entry.output.push(errorLine);
-      for (const listener of entry.listeners) {
-        listener(errorLine);
-      }
-
-      for (const exitListener of entry.exitListeners) {
-        exitListener(null);
-      }
-      entry.exitListeners.clear();
-    });
-  }
-
   private createEventStream(
     handle: SessionHandle,
     entry: ProcessEntry,
@@ -325,20 +228,27 @@ export class CodexRuntime implements SessionRuntime {
       let done = false;
 
       const onLine = (line: string) => {
-        // Codex output is plain text lines (simpler than Claude JSON)
-        if (line.startsWith("[stderr]")) {
-          queue.push({
-            type: "error",
-            message: line.replace("[stderr] ", ""),
-            recoverable: true,
-          });
-        } else {
-          queue.push({
-            type: "text_delta",
-            text: line,
-            stream: "output",
-          });
+        // Parse JSON error lines (from shared wireStderr)
+        try {
+          const parsed = JSON.parse(line);
+          if (parsed.type === "error" && typeof parsed.error === "string") {
+            queue.push({
+              type: "error",
+              message: parsed.error,
+              recoverable: true,
+            });
+            if (resolve) { const r = resolve; resolve = null; r(); }
+            return;
+          }
+        } catch {
+          // Not JSON — treat as plain text output
         }
+
+        queue.push({
+          type: "text_delta",
+          text: line,
+          stream: "output",
+        });
 
         if (resolve) {
           const r = resolve;

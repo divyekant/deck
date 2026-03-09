@@ -1,5 +1,4 @@
-import { spawn, execSync } from "child_process";
-import type { ChildProcess } from "child_process";
+import { spawn } from "child_process";
 import { randomUUID } from "crypto";
 import { getAuthEnv } from "@/lib/auth";
 import type {
@@ -9,46 +8,18 @@ import type {
   SessionHandle,
   SessionRuntime,
 } from "./types";
+import {
+  type ProcessEntry,
+  CLI_PATH,
+  isCliAvailable,
+  pushOutput,
+  wireStdout,
+  wireStderr,
+  wireProcessEvents,
+} from "./utils";
 
-// ---- Internal state ----
-
-export interface ProcessEntry {
-  process: ChildProcess;
-  output: string[];
-  listeners: Set<(line: string) => void>;
-  exitListeners: Set<(code: number | null) => void>;
-}
-
-// ---- PATH helper ----
-
-function getCliPath(): string {
-  const base = process.env.PATH || "/usr/bin:/bin:/usr/sbin:/sbin";
-  const extras = [
-    `${process.env.HOME}/.nvm/versions/node/v24.12.0/bin`,
-    `${process.env.HOME}/.orbstack/bin`,
-    `${process.env.HOME}/homebrew/bin`,
-    `${process.env.HOME}/.local/bin`,
-    "/usr/local/bin",
-    "/opt/homebrew/bin",
-  ];
-  const parts = new Set(base.split(":"));
-  for (const p of extras) parts.add(p);
-  return Array.from(parts).join(":");
-}
-
-const CLI_PATH = getCliPath();
-
-function isCliAvailable(binary: string): boolean {
-  try {
-    execSync(`which ${binary}`, {
-      env: { ...process.env, PATH: CLI_PATH },
-      stdio: "pipe",
-    });
-    return true;
-  } catch {
-    return false;
-  }
-}
+// Re-export for consumers (stream route uses this type)
+export type { ProcessEntry } from "./utils";
 
 // ---- Event translation ----
 
@@ -183,14 +154,10 @@ export class ClaudeRuntime implements SessionRuntime {
 
     this.processes.set(id, entry);
 
-    // Wire stdout line buffering
-    this.wireStdout(id, proc, entry);
-
-    // Wire stderr
-    this.wireStderr(proc, entry);
-
-    // Wire close/error events
-    this.wireProcessEvents(id, proc, entry);
+    // Wire I/O using shared helpers
+    wireStdout(entry, proc);
+    wireStderr(entry, proc);
+    wireProcessEvents(id, proc, entry);
 
     // Write initial prompt to stdin BUT LEAVE STDIN OPEN (persistent mode)
     if (proc.stdin && config.prompt) {
@@ -229,7 +196,7 @@ export class ClaudeRuntime implements SessionRuntime {
       // Persistent mode: write to existing stdin
       proc.stdin!.write(prompt + "\n");
     } else {
-      // Fallback: respawn with --resume
+      // Fallback: respawn with --resume, keeping stdin open for future turns
       await this.respawnForResume(handle, entry, prompt);
     }
 
@@ -285,76 +252,6 @@ export class ClaudeRuntime implements SessionRuntime {
 
   // ---- Private helpers ----
 
-  private wireStdout(
-    _id: string,
-    proc: ChildProcess,
-    entry: ProcessEntry,
-  ): void {
-    let buffer = "";
-    proc.stdout?.on("data", (chunk: Buffer) => {
-      buffer += chunk.toString();
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || "";
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (trimmed) {
-          entry.output.push(trimmed);
-          for (const listener of entry.listeners) {
-            listener(trimmed);
-          }
-        }
-      }
-    });
-  }
-
-  private wireStderr(proc: ChildProcess, entry: ProcessEntry): void {
-    proc.stderr?.on("data", (chunk: Buffer) => {
-      const text = chunk.toString().trim();
-      if (text) {
-        const errorLine = JSON.stringify({ type: "error", error: text });
-        entry.output.push(errorLine);
-        for (const listener of entry.listeners) {
-          listener(errorLine);
-        }
-      }
-    });
-  }
-
-  private wireProcessEvents(
-    id: string,
-    proc: ChildProcess,
-    entry: ProcessEntry,
-  ): void {
-    proc.on("close", (code) => {
-      for (const exitListener of entry.exitListeners) {
-        exitListener(code);
-      }
-      entry.exitListeners.clear();
-
-      // Remove from internal map after 5 minutes
-      setTimeout(() => {
-        this.processes.delete(id);
-      }, 5 * 60 * 1000);
-    });
-
-    proc.on("error", (err) => {
-      const errorLine = JSON.stringify({
-        type: "error",
-        error: `Process error: ${err.message}`,
-      });
-      entry.output.push(errorLine);
-      for (const listener of entry.listeners) {
-        listener(errorLine);
-      }
-
-      for (const exitListener of entry.exitListeners) {
-        exitListener(null);
-      }
-      entry.exitListeners.clear();
-    });
-  }
-
   private async respawnForResume(
     handle: SessionHandle,
     entry: ProcessEntry,
@@ -388,15 +285,15 @@ export class ClaudeRuntime implements SessionRuntime {
     // Update entry with new process
     entry.process = proc;
 
-    // Re-wire I/O
-    this.wireStdout(handle.id, proc, entry);
-    this.wireStderr(proc, entry);
-    this.wireProcessEvents(handle.id, proc, entry);
+    // Re-wire I/O using shared helpers
+    wireStdout(entry, proc);
+    wireStderr(entry, proc);
+    wireProcessEvents(handle.id, proc, entry);
 
-    // Write prompt and close stdin (resume mode behaves like -p)
+    // Write prompt but LEAVE STDIN OPEN to preserve persistent mode
     if (proc.stdin) {
       proc.stdin.write(prompt + "\n");
-      proc.stdin.end();
+      // DO NOT call proc.stdin.end() — keep persistent mode alive after resume
     }
   }
 
@@ -404,14 +301,9 @@ export class ClaudeRuntime implements SessionRuntime {
     handle: SessionHandle,
     entry: ProcessEntry,
   ): AsyncIterable<SessionEvent> {
-    const self = this;
-
     async function* generator(): AsyncGenerator<SessionEvent> {
-      // Process any already-buffered output lines that arrived
-      // between the write and now
       const startIdx = entry.output.length;
 
-      // Create a queue for incoming events
       const queue: SessionEvent[] = [];
       let resolve: (() => void) | null = null;
       let done = false;
@@ -438,7 +330,6 @@ export class ClaudeRuntime implements SessionRuntime {
       const onExit = (_code: number | null) => {
         if (!done) {
           done = true;
-          // Don't push a duplicate done if we already got a result event
         }
         if (resolve) {
           const r = resolve;
@@ -450,7 +341,7 @@ export class ClaudeRuntime implements SessionRuntime {
       entry.listeners.add(onLine);
       entry.exitListeners.add(onExit);
 
-      // Process any lines that were buffered before we attached the listener
+      // Process any lines buffered before listener attached
       for (let i = startIdx; i < entry.output.length; i++) {
         const event = translateLine(entry.output[i]);
         if (event) {
@@ -473,14 +364,12 @@ export class ClaudeRuntime implements SessionRuntime {
           } else if (done) {
             return;
           } else {
-            // Wait for more events
             await new Promise<void>((r) => {
               resolve = r;
             });
           }
         }
       } finally {
-        // Cleanup listeners
         entry.listeners.delete(onLine);
         entry.exitListeners.delete(onExit);
       }
