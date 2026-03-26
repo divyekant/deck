@@ -1,3 +1,14 @@
+/**
+ * Convert a Date to a YYYY-MM-DD string in the local timezone.
+ * Use this instead of toISOString().slice(0, 10) which returns UTC dates.
+ */
+export function toLocalDateKey(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, "0")
+  const d = String(date.getDate()).padStart(2, "0")
+  return `${y}-${m}-${d}`
+}
+
 export function truncate(str: string, max: number): string {
   if (str.length <= max) return str
   return str.slice(0, max).trimEnd() + "..."

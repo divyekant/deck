@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { listSessions } from "@/lib/claude/sessions"
+import { forEachModelCost } from "@/lib/claude/types"
 
 interface ModelStats {
   model: string
@@ -43,6 +44,7 @@ export async function GET() {
     >()
 
     for (const s of allSessions) {
+      // Tokens, sessions, and duration are attributed to session.model
       const existing = modelMap.get(s.model) ?? {
         sessions: 0,
         totalCost: 0,
@@ -53,13 +55,27 @@ export async function GET() {
         totalDuration: 0,
       }
       existing.sessions += 1
-      existing.totalCost += s.estimatedCost
       existing.totalInputTokens += s.totalInputTokens
       existing.totalOutputTokens += s.totalOutputTokens
       existing.totalCacheCreation += s.cacheCreationTokens
       existing.totalCacheRead += s.cacheReadTokens
       existing.totalDuration += s.duration
       modelMap.set(s.model, existing)
+
+      // Cost is attributed per-model when breakdown is available
+      forEachModelCost(s, (model, cost) => {
+        const entry = modelMap.get(model) ?? {
+          sessions: 0,
+          totalCost: 0,
+          totalInputTokens: 0,
+          totalOutputTokens: 0,
+          totalCacheCreation: 0,
+          totalCacheRead: 0,
+          totalDuration: 0,
+        }
+        entry.totalCost += cost
+        modelMap.set(model, entry)
+      })
     }
 
     // Compute per-model stats

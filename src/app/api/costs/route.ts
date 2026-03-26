@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { listSessions } from "@/lib/claude/sessions"
 import type { SessionMeta } from "@/lib/claude/types"
+import { forEachModelCost } from "@/lib/claude/types"
+import { toLocalDateKey } from "@/lib/format"
 
 type Range = "thisMonth" | "lastMonth" | "90d" | "all"
 
@@ -78,7 +80,7 @@ function fillDailyZeros(
   endDate.setHours(23, 59, 59, 999)
 
   while (cursor <= endDate) {
-    const dateKey = cursor.toISOString().slice(0, 10)
+    const dateKey = toLocalDateKey(cursor)
     result.push({ date: dateKey, cost: costMap.get(dateKey) ?? 0 })
     cursor.setDate(cursor.getDate() + 1)
   }
@@ -113,14 +115,16 @@ export async function GET(request: NextRequest) {
       totalCost += s.estimatedCost
 
       // Daily
-      const dateKey = new Date(s.startTime).toISOString().slice(0, 10)
+      const dateKey = toLocalDateKey(new Date(s.startTime))
       dailyMap.set(dateKey, (dailyMap.get(dateKey) ?? 0) + s.estimatedCost)
 
-      // Model
-      const modelEntry = modelMap.get(s.model) ?? { cost: 0, sessions: 0 }
-      modelEntry.cost += s.estimatedCost
-      modelEntry.sessions += 1
-      modelMap.set(s.model, modelEntry)
+      // Model — attribute cost to each model used in the session
+      forEachModelCost(s, (model, cost) => {
+        const modelEntry = modelMap.get(model) ?? { cost: 0, sessions: 0 }
+        modelEntry.cost += cost
+        modelEntry.sessions += 1
+        modelMap.set(model, modelEntry)
+      })
 
       // Project
       const projEntry = projectMap.get(s.projectName) ?? { cost: 0, sessions: 0 }

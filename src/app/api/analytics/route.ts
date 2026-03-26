@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { listSessions } from "@/lib/claude/sessions";
 import type { SessionMeta } from "@/lib/claude/types";
+import { forEachModelCost } from "@/lib/claude/types";
 
 // ---- ISO Week Helpers ----
 
@@ -179,7 +180,7 @@ function computeAnalytics(sessions: SessionMeta[]): AnalyticsResponse {
       weeklyDurationMap.set(wk, durExisting);
     }
 
-    // Model efficiency (all time)
+    // Model efficiency (all time) — tokens attributed to session.model
     const me = modelMap.get(s.model) ?? {
       sessions: 0,
       cost: 0,
@@ -188,11 +189,23 @@ function computeAnalytics(sessions: SessionMeta[]): AnalyticsResponse {
       cacheTokens: 0,
     };
     me.sessions += 1;
-    me.cost += s.estimatedCost;
     me.inputTokens += s.totalInputTokens;
     me.outputTokens += s.totalOutputTokens;
     me.cacheTokens += s.cacheCreationTokens + s.cacheReadTokens;
     modelMap.set(s.model, me);
+
+    // Cost attributed per-model when breakdown is available
+    forEachModelCost(s, (model, cost) => {
+      const entry = modelMap.get(model) ?? {
+        sessions: 0,
+        cost: 0,
+        inputTokens: 0,
+        outputTokens: 0,
+        cacheTokens: 0,
+      };
+      entry.cost += cost;
+      modelMap.set(model, entry);
+    });
 
     // Project ranking (all time)
     const pr = projectMap.get(s.projectName) ?? { cost: 0, sessions: 0 };

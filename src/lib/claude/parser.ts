@@ -137,9 +137,12 @@ export async function parseSessionFile(
 
   // Calculate total cost across all models used in this session
   let estimatedCost = 0;
+  const modelCosts: Record<string, number> = {};
   if (modelUsageMap.size > 0) {
     for (const [m, u] of modelUsageMap) {
-      estimatedCost += calculateCost(m, u);
+      const c = calculateCost(m, u);
+      modelCosts[m] = c;
+      estimatedCost += c;
     }
   } else if (model) {
     estimatedCost = calculateCost(model, totalUsage);
@@ -161,6 +164,7 @@ export async function parseSessionFile(
     cacheCreationTokens: totalUsage.cache_creation_input_tokens,
     cacheReadTokens: totalUsage.cache_read_input_tokens,
     estimatedCost,
+    modelCosts,
     startTime: startTime || new Date(0).toISOString(),
     endTime: endTime || new Date(0).toISOString(),
     duration: endMs - startMs,
@@ -362,6 +366,10 @@ export async function parseCodexSessionFile(
     cache_read_input_tokens: cachedInputTokens,
   };
   const estimatedCost = model ? calculateCost(model, tokenUsage) : 0;
+  const modelCosts: Record<string, number> = {};
+  if (model && estimatedCost > 0) {
+    modelCosts[model] = estimatedCost;
+  }
 
   const startMs = startTime ? new Date(startTime).getTime() : 0;
   const endMs = endTime ? new Date(endTime).getTime() : 0;
@@ -379,6 +387,7 @@ export async function parseCodexSessionFile(
     cacheCreationTokens: 0,
     cacheReadTokens: cachedInputTokens,
     estimatedCost,
+    modelCosts,
     startTime: startTime || new Date(0).toISOString(),
     endTime: endTime || new Date(0).toISOString(),
     duration: endMs - startMs,

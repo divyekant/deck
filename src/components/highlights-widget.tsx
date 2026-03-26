@@ -1,6 +1,7 @@
 import { MessageSquare, DollarSign, GitBranch, Cpu } from "lucide-react"
 import type { SessionMeta } from "@/lib/claude/types"
 import { formatCost } from "@/lib/claude/costs"
+import { toLocalDateKey } from "@/lib/format"
 
 interface HighlightsWidgetProps {
   sessions: SessionMeta[]
@@ -14,11 +15,11 @@ interface HighlightItem {
 
 export function HighlightsWidget({ sessions }: HighlightsWidgetProps) {
   const now = new Date()
-  const todayStr = now.toISOString().slice(0, 10)
+  const todayStr = toLocalDateKey(now)
 
   const yesterday = new Date(now)
   yesterday.setDate(yesterday.getDate() - 1)
-  const yesterdayStr = yesterday.toISOString().slice(0, 10)
+  const yesterdayStr = toLocalDateKey(yesterday)
 
   // Filter to today's sessions
   let targetSessions = sessions.filter((s) => s.startTime.slice(0, 10) === todayStr)

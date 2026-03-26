@@ -35,12 +35,13 @@ export default function CostTips({ sessions }: { sessions: SessionData[] }) {
       )
     })
     if (shortExpensive.length > 0) {
-      const currentCost = shortExpensive.reduce(
-        (sum, s) => sum + s.estimatedCost,
-        0
-      )
-      // Haiku is roughly 10x cheaper
-      const potentialSavings = currentCost * 0.9
+      // Opus→Haiku ~19x cheaper (95%), Sonnet→Haiku ~3.75x cheaper (73%)
+      let potentialSavings = 0
+      for (const s of shortExpensive) {
+        const m = s.model.toLowerCase()
+        const savingsRate = m.includes("opus") ? 0.95 : 0.73
+        potentialSavings += s.estimatedCost * savingsRate
+      }
       if (potentialSavings > 0.5) {
         result.push({
           text: `You could save ~${formatCost(potentialSavings)}/mo by using Haiku for short sessions (<10 messages)`,
@@ -59,8 +60,9 @@ export default function CostTips({ sessions }: { sessions: SessionData[] }) {
       (sum, s) => sum + s.totalInputTokens,
       0
     )
-    if (totalInput > 0) {
-      const cacheRate = Math.round((totalCacheRead / totalInput) * 100)
+    const cacheBase = totalInput + totalCacheRead
+    if (cacheBase > 0) {
+      const cacheRate = Math.round((totalCacheRead / cacheBase) * 100)
       if (cacheRate < 50) {
         result.push({
           text: `Your cache hit rate is ${cacheRate}%. Longer sessions with consistent context improve cache efficiency.`,

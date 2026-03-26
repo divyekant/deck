@@ -2,6 +2,7 @@ import { promises as fs } from "fs";
 import os from "os";
 import path from "path";
 
+import { toLocalDateKey } from "@/lib/format";
 import { parseSessionFile, parseCodexSessionFile } from "./parser";
 import type {
   DailyActivity,
@@ -10,6 +11,7 @@ import type {
   SessionDetail,
   SessionMeta,
 } from "./types";
+import { forEachModelCost } from "./types";
 
 // ---- Constants ----
 
@@ -351,7 +353,7 @@ export async function getCostTrend(
   for (const session of sessions) {
     const sessionDate = new Date(session.startTime);
     if (sessionDate >= startDate) {
-      const dateKey = sessionDate.toISOString().slice(0, 10);
+      const dateKey = toLocalDateKey(sessionDate);
       costMap.set(dateKey, (costMap.get(dateKey) ?? 0) + session.estimatedCost);
     }
   }
@@ -360,7 +362,7 @@ export async function getCostTrend(
   const result: { date: string; cost: number }[] = [];
   const cursor = new Date(startDate);
   for (let i = 0; i < days; i++) {
-    const dateKey = cursor.toISOString().slice(0, 10);
+    const dateKey = toLocalDateKey(cursor);
     result.push({ date: dateKey, cost: costMap.get(dateKey) ?? 0 });
     cursor.setDate(cursor.getDate() + 1);
   }
@@ -393,16 +395,18 @@ export async function getOverviewStats(): Promise<OverviewStats> {
   for (const session of sessions) {
     totalCost += session.estimatedCost;
 
-    // Model breakdown
-    const existing = modelMap.get(session.model) ?? { cost: 0, count: 0 };
-    existing.cost += session.estimatedCost;
-    existing.count += 1;
-    modelMap.set(session.model, existing);
+    // Model breakdown — attribute cost to each model used in the session
+    forEachModelCost(session, (model, cost) => {
+      const existing = modelMap.get(model) ?? { cost: 0, count: 0 };
+      existing.cost += cost;
+      existing.count += 1;
+      modelMap.set(model, existing);
+    });
 
     // Daily activity (last 30 days only)
     const sessionDate = new Date(session.startTime);
     if (sessionDate >= thirtyDaysAgo) {
-      const dateKey = sessionDate.toISOString().slice(0, 10); // YYYY-MM-DD
+      const dateKey = toLocalDateKey(sessionDate); // YYYY-MM-DD
       const daily = dailyMap.get(dateKey) ?? { count: 0, cost: 0 };
       daily.count += 1;
       daily.cost += session.estimatedCost;

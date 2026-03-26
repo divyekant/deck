@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { listSessions } from "@/lib/claude/sessions"
 import type { SessionMeta } from "@/lib/claude/types"
+import { toLocalDateKey } from "@/lib/format"
 
 type ExportType = "sessions" | "costs" | "tokens" | "models"
 type ExportFormat = "json" | "csv"
@@ -110,7 +111,7 @@ function buildCostsData(sessions: SessionMeta[]): CostRow[] {
   const dailyMap = new Map<string, { sessions: number; cost: number }>()
 
   for (const s of sessions) {
-    const dateKey = new Date(s.startTime).toISOString().slice(0, 10)
+    const dateKey = toLocalDateKey(new Date(s.startTime))
     const entry = dailyMap.get(dateKey) ?? { sessions: 0, cost: 0 }
     entry.sessions += 1
     entry.cost += s.estimatedCost

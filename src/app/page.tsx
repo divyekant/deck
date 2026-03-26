@@ -231,7 +231,7 @@ export default async function Home() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <StreakWidget dailyActivity={stats.dailyActivity} />
+            <StreakWidget dailyActivity={stats.dailyActivity} allSessionDates={allSessions.map((s) => s.startTime)} />
           </CardContent>
         </Card>
 

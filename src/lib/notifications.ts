@@ -4,6 +4,7 @@ import os from "os"
 import { withFileLock } from "./file-lock"
 
 import type { SessionMeta } from "./claude/types"
+import { toLocalDateKey } from "@/lib/format"
 
 const DECK_DIR = path.join(os.homedir(), ".deck")
 const NOTIFICATIONS_FILE = path.join(DECK_DIR, "notifications.json")
@@ -50,7 +51,7 @@ export function generateNotifications(
   periodCost: number
 ): Notification[] {
   const notifications: Notification[] = []
-  const today = new Date().toISOString().slice(0, 10)
+  const today = toLocalDateKey(new Date())
 
   // Budget threshold notifications (mutually exclusive — show the highest)
   if (budget > 0) {
@@ -108,7 +109,7 @@ export function generateNotifications(
   // Cost spike: today's cost > 2x average daily cost
   const dailyCostMap = new Map<string, number>()
   for (const session of sessions) {
-    const dateKey = new Date(session.startTime).toISOString().slice(0, 10)
+    const dateKey = toLocalDateKey(new Date(session.startTime))
     dailyCostMap.set(dateKey, (dailyCostMap.get(dateKey) ?? 0) + session.estimatedCost)
   }
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { listSessions } from "@/lib/claude/sessions"
 import type { SessionMeta } from "@/lib/claude/types"
+import { toLocalDateKey } from "@/lib/format"
 
 type ReportType = "weekly" | "monthly" | "project"
 
@@ -66,8 +67,8 @@ function getDateRange(type: ReportType): { start: Date; end: Date } {
 
 function formatDateRange(start: Date, end: Date): { start: string; end: string } {
   return {
-    start: start.toISOString().slice(0, 10),
-    end: end.toISOString().slice(0, 10),
+    start: toLocalDateKey(start),
+    end: toLocalDateKey(end),
   }
 }
 
@@ -79,7 +80,7 @@ function fillDailyActivity(
   const dailyMap = new Map<string, { count: number; cost: number }>()
 
   for (const s of sessions) {
-    const dateKey = new Date(s.startTime).toISOString().slice(0, 10)
+    const dateKey = toLocalDateKey(new Date(s.startTime))
     const existing = dailyMap.get(dateKey) ?? { count: 0, cost: 0 }
     existing.count += 1
     existing.cost += s.estimatedCost
@@ -93,7 +94,7 @@ function fillDailyActivity(
   endDate.setHours(23, 59, 59, 999)
 
   while (cursor <= endDate) {
-    const dateKey = cursor.toISOString().slice(0, 10)
+    const dateKey = toLocalDateKey(cursor)
     const entry = dailyMap.get(dateKey)
     result.push({
       date: dateKey,

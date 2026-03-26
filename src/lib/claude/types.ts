@@ -146,9 +146,21 @@ export interface SessionMeta {
   cacheCreationTokens: number;
   cacheReadTokens: number;
   estimatedCost: number;
+  modelCosts?: Record<string, number>;  // per-model cost breakdown (model -> USD)
   startTime: string;
   endTime: string;
   duration: number; // milliseconds
+}
+
+/** Iterate over a session's per-model costs. Falls back to attributing all cost to session.model. */
+export function forEachModelCost(s: SessionMeta, fn: (model: string, cost: number) => void): void {
+  if (s.modelCosts && Object.keys(s.modelCosts).length > 0) {
+    for (const [model, cost] of Object.entries(s.modelCosts)) {
+      fn(model, cost)
+    }
+  } else {
+    fn(s.model, s.estimatedCost)
+  }
 }
 
 export interface SessionDetail {

@@ -116,10 +116,11 @@ export function ContextWindowChart({ messages, model }: ContextWindowChartProps)
   const limitY = yScale(contextLimit)
   const showLimitLine = contextLimit <= yMax
 
-  // Fill percentage
-  const peakTotal = Math.max(...dataPoints.map((d) => d.total))
-  const peakPct = ((peakTotal / contextLimit) * 100).toFixed(1)
-  const finalPct = ((dataPoints[dataPoints.length - 1].total / contextLimit) * 100).toFixed(1)
+  // Fill percentage — only input + cache counts against context window (output does not)
+  const peakContextUsage = Math.max(...dataPoints.map((d) => d.cumulativeInput + d.cumulativeCache))
+  const peakPct = ((peakContextUsage / contextLimit) * 100).toFixed(1)
+  const finalContextUsage = dataPoints[dataPoints.length - 1].cumulativeInput + dataPoints[dataPoints.length - 1].cumulativeCache
+  const finalPct = ((finalContextUsage / contextLimit) * 100).toFixed(1)
 
   // Tooltip
   const hoveredPoint = hovered !== null && hovered >= 0 && hovered < dataPoints.length ? dataPoints[hovered] : null
@@ -265,7 +266,7 @@ export function ContextWindowChart({ messages, model }: ContextWindowChartProps)
               <p className="text-emerald-400">Cache: {formatTokens(hoveredPoint.cumulativeCache)}</p>
             </div>
             <p className="text-zinc-400 mt-1 pt-1 border-t border-zinc-700">
-              {((hoveredPoint.total / contextLimit) * 100).toFixed(1)}% of context
+              {(((hoveredPoint.cumulativeInput + hoveredPoint.cumulativeCache) / contextLimit) * 100).toFixed(1)}% of context
             </p>
           </div>
         )}
@@ -289,7 +290,7 @@ export function ContextWindowChart({ messages, model }: ContextWindowChartProps)
         </div>
         <div className="flex items-center gap-4">
           <span>Peak: {peakPct}%</span>
-          <span>Total: {formatTokens(peakTotal)}</span>
+          <span>Total: {formatTokens(Math.max(...dataPoints.map((d) => d.total)))}</span>
         </div>
       </div>
     </div>

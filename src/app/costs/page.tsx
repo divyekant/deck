@@ -322,6 +322,7 @@ export default function CostsPage() {
   const [data, setData] = useState<CostsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [tipSessions, setTipSessions] = useState<TipSession[]>([])
+  const [monthlyBudget, setMonthlyBudget] = useState<number>(200)
 
   const fetchCosts = useCallback(async (r: Range) => {
     setLoading(true)
@@ -340,6 +341,21 @@ export default function CostsPage() {
   useEffect(() => {
     fetchCosts(range)
   }, [range, fetchCosts])
+
+  // Fetch budget from settings
+  useEffect(() => {
+    async function fetchSettings() {
+      try {
+        const res = await fetch("/api/settings")
+        if (!res.ok) return
+        const json = await res.json()
+        if (json.budget != null) setMonthlyBudget(json.budget)
+      } catch {
+        // ignore — keep default
+      }
+    }
+    fetchSettings()
+  }, [])
 
   // Fetch session data for cost tips
   useEffect(() => {
@@ -445,7 +461,7 @@ export default function CostsPage() {
           </div>
 
           {/* Cost Forecast */}
-          <CostForecast dailyCosts={data.dailyCosts} monthlyBudget={200} />
+          <CostForecast dailyCosts={data.dailyCosts} monthlyBudget={monthlyBudget} />
 
           {/* Two-column grid: Model + Project breakdowns */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

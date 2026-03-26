@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { listSessions } from "@/lib/claude/sessions";
+import { toLocalDateKey } from "@/lib/format";
 import type { SessionMeta } from "@/lib/claude/types";
 
 interface ModelSummary {
@@ -65,7 +66,7 @@ export async function GET(
     // Active days: count unique dates
     const uniqueDates = new Set<string>();
     for (const s of projectSessions) {
-      uniqueDates.add(new Date(s.startTime).toISOString().slice(0, 10));
+      uniqueDates.add(toLocalDateKey(new Date(s.startTime)));
     }
     const activeDays = uniqueDates.size;
 
@@ -79,7 +80,7 @@ export async function GET(
     for (const s of projectSessions) {
       const sessionDate = new Date(s.startTime);
       if (sessionDate >= startDate) {
-        const dateKey = sessionDate.toISOString().slice(0, 10);
+        const dateKey = toLocalDateKey(sessionDate);
         costMap.set(dateKey, (costMap.get(dateKey) ?? 0) + s.estimatedCost);
       }
     }
@@ -87,7 +88,7 @@ export async function GET(
     const costTrend: { date: string; cost: number }[] = [];
     const cursor = new Date(startDate);
     for (let i = 0; i < 90; i++) {
-      const dateKey = cursor.toISOString().slice(0, 10);
+      const dateKey = toLocalDateKey(cursor);
       costTrend.push({ date: dateKey, cost: costMap.get(dateKey) ?? 0 });
       cursor.setDate(cursor.getDate() + 1);
     }

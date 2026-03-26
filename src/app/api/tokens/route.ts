@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { listSessions } from "@/lib/claude/sessions"
 import type { SessionMeta } from "@/lib/claude/types"
+import { forEachModelCost } from "@/lib/claude/types"
+import { toLocalDateKey } from "@/lib/format"
 
 // ---- Response Types ----
 
@@ -72,7 +74,7 @@ function fillDailyZeros(
   cursor.setHours(0, 0, 0, 0)
 
   for (let i = 0; i < days; i++) {
-    const dateKey = cursor.toISOString().slice(0, 10)
+    const dateKey = toLocalDateKey(cursor)
     result.push({ date: dateKey, totalTokens: tokenMap.get(dateKey) ?? 0 })
     cursor.setDate(cursor.getDate() + 1)
   }
@@ -148,15 +150,26 @@ export async function GET() {
     >()
 
     for (const s of allSessions) {
+      // Tokens and sessions attributed to session.model
       const entry = modelMap.get(s.model) ?? {
         totalTokens: 0,
         totalCost: 0,
         sessions: 0,
       }
       entry.totalTokens += totalTokensForSession(s)
-      entry.totalCost += s.estimatedCost
       entry.sessions += 1
       modelMap.set(s.model, entry)
+
+      // Cost attributed per-model when breakdown is available
+      forEachModelCost(s, (model, cost) => {
+        const me = modelMap.get(model) ?? {
+          totalTokens: 0,
+          totalCost: 0,
+          sessions: 0,
+        }
+        me.totalCost += cost
+        modelMap.set(model, me)
+      })
     }
 
     const modelComparison: ModelComparison[] = Array.from(modelMap.entries())
@@ -183,7 +196,7 @@ export async function GET() {
     for (const s of allSessions) {
       const sessionDate = new Date(s.startTime)
       if (sessionDate >= thirtyDaysAgo) {
-        const dateKey = sessionDate.toISOString().slice(0, 10)
+        const dateKey = toLocalDateKey(sessionDate)
         dailyTokenMap.set(
           dateKey,
           (dailyTokenMap.get(dateKey) ?? 0) + totalTokensForSession(s)

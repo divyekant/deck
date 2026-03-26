@@ -208,7 +208,7 @@ function getMostEfficientProject(sessions: SessionMeta[]): Insight {
       count: 0,
     };
     existing.totalCacheRead += s.cacheReadTokens;
-    existing.totalInput += s.totalInputTokens + s.cacheCreationTokens + s.cacheReadTokens;
+    existing.totalInput += s.totalInputTokens + s.cacheReadTokens;
     existing.count++;
     projectStats.set(s.projectName, existing);
   }
